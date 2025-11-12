@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ver Orden 1004</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <header class="app-header">
+            <h1>Plataforma de Adquisiciones</h1>
+            <span>Usuario: Juan Pérez (Solicitante)</span>
+        </header>
+
+        <main class="app-content">
+
+            <div id="firma-view">
+                <h2>Detalle de Orden de Pedido N° 1004 (Solo Lectura)</h2>
+
+                <fieldset disabled> <legend>1. Datos del Solicitante</legend>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>N° Requerimiento</label>
+                            <input type="text" value="1004" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha Creación</label>
+                            <input type="text" value="30/10/2025" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label>Prof. Responsable</label>
+                            <input type="text" value="Juan Pérez" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label>Depto. Solicitante</label>
+                            <input type="text" value="Dirección de Obras" disabled>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset disabled>
+                    <legend>2. Datos Generales de la Orden</legend>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Nombre de la Compra</label>
+                            <input type="text" value="Servicio de desratización" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label>Plazo Máximo de Entrega</label>
+                            <input type="date" value="2025-11-15" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo de Compra</label>
+                            <select disabled>
+                                <option>Trato Directo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Motivo de la Compra</label>
+                        <textarea disabled>Se requiere con urgencia por plaga en bodegas municipales.</textarea>
+                    </div>
+                </fieldset>
+
+                <fieldset disabled>
+                    <legend>3. Imputación Presupuestaria</legend>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Presupuesto ($)</label>
+                            <input type="number" value="250000" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label>Subprograma</label>
+                            <select disabled>
+                                <option>Dato 2</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Centro de Costo</label>
+                            <input type="text" value="5100 - Dirección de Obras" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label>Insertar Nombre (n)</label>
+                            <input type="text" value="Servicios Varios" disabled>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset disabled>
+                    <legend>4. Detalle de Productos/Servicios</legend>
+                    <table id="items-table-firma">
+                        <thead>
+                            <tr>
+                                <th>Cantidad</th>
+                                <th>Producto o Servicio</th>
+                                <th>V. Unitario ($)</th>
+                                <th>Total Línea ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><input type="number" value="1" disabled></td>
+                                <td><input type="text" value="Servicio completo desratización" disabled></td>
+                                <td><input type="number" class="input-v-unitario" value="210084" disabled></td>
+                                <td><span class="total-linea">210084</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </fieldset>
+
+                <fieldset disabled>
+                    <legend>5. Totales</legend>
+                    <div class="totals-grid">
+                        <label>Valor Neto:</label>
+                        <input type="text" value="210084" disabled>
+                        
+                        <label>IVA (19%):</label>
+                        <input type="text" value="39916" disabled>
+
+                        <label>Valor Total:</label>
+                        <input type="text" value="250000" disabled style="font-weight: bold; font-size: 1.1em;">
+                    </div>
+                </fieldset>
+                <div class="form-actions">
+                    <a href="index.html" class="btn btn-secondary">Volver</a>
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+    
+    </body>
+</html>

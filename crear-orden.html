@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Nueva Orden</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <header class="app-header">
+            <h1>Plataforma de Adquisiciones</h1>
+            <span>Usuario: Juan Pérez (Solicitante)</span>
+        </header>
+
+        <main class="app-content">
+
+            <div id="form-view">
+                <h2>Formulario de Creación de Orden de Pedido</h2>
+
+                <fieldset>
+                    <legend>1. Datos del Solicitante (Autocompletado)</legend>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>N° Requerimiento</label>
+                            <input type="text" value="1004 (Automático)" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha Creación</label>
+                            <input type="text" value="30/10/2025" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label>Prof. Responsable</label>
+                            <input type="text" value="Juan Pérez" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label>Depto. Solicitante</label>
+                            <input type="text" value="Dirección de Obras" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="text" value="jperez@municipalidad.cl" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label>Teléfono</label>
+                            <input type="text" value="+56 9 1234 5678" disabled>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>2. Datos Generales de la Orden</legend>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="nombre-orden">Nombre de la Compra <span style="color: red;">*</span></label>
+                            <input type="text" id="nombre-orden" placeholder="Ej: Compra de insumos para...">
+                        </div>
+                        <div class="form-group">
+                            <label for="plazo-max">Plazo Máximo de Entrega <span style="color: red;">*</span></label>
+                            <input type="date" id="plazo-max">
+                        </div>
+                        <div class="form-group">
+                            <label for="tipo-compra">Tipo de Compra<span style="color: red;">*</span></label>
+                            <select id="tipo-compra">
+                                <option value="convenio_marco">Convenio Marco</option>
+                                <option value="compra_agil">Compra Ágil</option>
+                                <option value="trato_directo">Trato Directo</option>
+                                <option value="licitacion_publica">Licitación Pública</option>
+                                <option value="licitacion_privada">Licitación Privada</opttion>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="motivo-compra">Motivo de la Compra <span style="color: red;">*</span></label>
+                        <textarea id="motivo-compra" placeholder="Justifique la necesidad de esta compra..."></textarea>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>3. Imputación Presupuestaria</legend>
+                    <div class="form-grid">
+
+                        <div class="form-group">
+                            <label for="presupuesto">Presupuesto Disponible <span style="color: red;">*</span></label>
+                            <input type="number" id="presupuesto" placeholder="1500000">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="nombre_imputacion">N° Cuenta <span style="color: red;">*</span></label>
+                            <input type="text" id="nombre_imputacion" placeholder="Ingrese N° Cuenta">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="subprog">Subprograma <span style="color: red;">*</span></label>
+                            <select id="subprog">
+                                <option value="dato1"> 1</option>
+                                <option value="dato2"> 2</option>
+                                <option value="dato3"> 3</option>
+                                <option value="dato1"> 4</option>
+                                <option value="dato2"> 5</option>
+                                <option value="dato3"> 6</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="cc">Centro de Costo</label>
+                            <input type="text" id="cc" placeholder="000000 - Dirección de Obras">
+                        </div>
+                        
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>4. Detalle de Productos/Servicios</legend>
+                    <table id="items-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 10%;">Cantidad <span style="color: red;">*</span></th>
+                                <th>Producto o Servicio <span style="color: red;">*</span></th>
+                                <th class="col-v-unitario" style="width: 20%;">V. Unitario ($) <span style="color: red;">*</span></th>
+                                <th class="col-total-linea" style="width: 20%;">Total Línea ($) </th>
+                                <th style="width: 5%;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><input type="number" value="2"></td>
+                                <td><input type="text" value="Resma de Papel Carta"></td>
+                                <td class="col-v-unitario"><input type="number" class="input-v-unitario" value="5000"></td>
+                                <td class="col-total-linea"><span class="total-linea">10000</span></td>
+                                <td><button class="accion-btn">🗑️</button></td>
+                            </tr>
+                            <tr>
+                                <td><input type="number" value="10"></td>
+                                <td><input type="text" value="Lápiz Tinta Azul"></td>
+                                <td class="col-v-unitario"><input type="number" class="input-v-unitario" value="300"></td>
+                                <td class="col-total-linea"><span class="total-linea">3000</span></td>
+                                <td><button class="accion-btn">🗑️</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <button class="btn btn-add-item">➕ Agregar Ítem</button>
+                </fieldset>
+
+                <fieldset>
+                    <legend>5. Totales (Cálculo Automático)</legend>
+                    <div class="totals-grid">
+                        <label id="label-valor-neto">Valor Neto:</label>
+                        <input id="input-valor-neto" type="text" value="13000" disabled>
+                        
+                        <label id="label-iva">IVA (19%):</label>
+                        <input id="input-iva" type="text" value="2470" disabled>
+
+                        <label id="label-valor-total">Valor Total:</label>
+                        <input id="input-valor-total" type="text" value="15470" disabled style="font-weight: bold; font-size: 1.1em;">
+                    </div>
+                </fieldset>
+                
+                <div class="form-actions">
+                    <a href="index.html" class="btn btn-danger">Cancelar</a>
+                    <a href="index.html" class="btn btn-success">➡️ Enviar a Aprobación</a>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="js/crear.js"></script>
+
+</body>
+</html>

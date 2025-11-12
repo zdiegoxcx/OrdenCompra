@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma de Adquisiciones - Inicio</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <header class="app-header">
+            <h1>Plataforma de Adquisiciones</h1>
+            <span>Usuario: Juan Pérez (Solicitante)</span>
+        </header>
+
+        <main class="app-content">
+
+            <div id="panel-view">
+                <div class="panel-header">
+                    <h2>Mis Órdenes de Pedido</h2>
+                    <a href="crear-orden.html" class="btn btn-primary">➕ Crear Nueva Orden</a>
+                </div>
+                
+                <table id="ordenes-table">
+                    <thead>
+                        <tr>
+                            <th>N°</th>
+                            <th>Nombre de la Compra</th>
+                            <th>Fecha Creación</th>
+                            <th>Total ($)</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1001</td>
+                            <td>Compra de insumos de oficina</td>
+                            <td>25/10/2025</td>
+                            <td>154.700</td>
+                            <td><span class="status status-aprobado">Aprobado</span></td>
+                            <td><a href="ver-orden2.html" class="btn btn-secondary" style="padding: 5px 10px;">Ver</a></td>
+                        </tr>
+                        <tr>
+                            <td>1004</td>
+                            <td>Servicio de desratización</td>
+                            <td>30/10/2025</td>
+                            <td>250.000</td>
+                            <td><span class="status status-pendiente-firma">Pend. Director</span></td>
+                            <td><a href="ver-orden2.html" class="btn btn-secondary" style="padding: 5px 10px;">Ver</a></td>
+                        </tr>
+                        <tr>
+                            <td>1002</td>
+                            <td>Servicio de mantención de jardines</td>
+                            <td>28/10/2025</td>
+                            <td>1.200.000</td>
+                            <td><span class="status status-pendiente">Pend. Alcalde</span></td>
+                            <td><a href="ver-orden2.html" class="btn btn-secondary" style="padding: 5px 10px;">Ver</a></td>
+                        </tr>
+                        <tr>
+                            <td>1003</td>
+                            <td>Compra de resmas de papel</td>
+                            <td>29/10/2025</td>
+                            <td>80.000</td>
+                            <td><span class="status status-borrador">Pend. mi firma</span></td>
+                            <td><a href="ver-orden.html" class="btn btn-secondary" style="padding: 5px 10px;">Ver</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+    
+    </body>
+</html>
