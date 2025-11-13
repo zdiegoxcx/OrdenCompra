@@ -129,6 +129,11 @@ $resultado_items = $stmt_items->get_result();
                             <label>Presupuesto ($)</label>
                             <input type="text" value="<?php echo htmlspecialchars($orden['Presupuesto']); ?>" disabled>
                         </div>
+
+                        <div class="form-group">
+                            <label>Cuenta Presupuestaria</label>
+                            <input type="text" value="<?php echo htmlspecialchars($orden['Cuenta_Presupuestaria']); ?>" disabled>
+                        </div>
                         <div class="form-group">
                             <label>Subprograma</label>
                             <select disabled>
@@ -139,10 +144,7 @@ $resultado_items = $stmt_items->get_result();
                             <label>Centro de Costo</label>
                             <input type="text" value="<?php echo htmlspecialchars($orden['Centro_Costos']); ?>" disabled>
                         </div>
-                        <div class="form-group">
-                            <label>Cuenta Presupuestaria</label>
-                            <input type="text" value="<?php echo htmlspecialchars($orden['Cuenta_Presupuestaria']); ?>" disabled>
-                        </div>
+                    
                     </div>
                 </fieldset>
 

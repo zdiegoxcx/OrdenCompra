@@ -98,7 +98,7 @@ function getStatusClass($estado) {
             <div id="panel-view">
                 <div class="panel-header">
                     <h2>Mis Órdenes de Pedido</h2>
-                    <a href="crear-orden.html" class="btn btn-primary">➕ Crear Nueva Orden</a>
+                    <a href="crear-orden.php" class="btn btn-primary">➕ Crear Nueva Orden</a>
                 </div>
                 
                 <table id="ordenes-table">

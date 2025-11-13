@@ -46,6 +46,9 @@ $depto_usuario = htmlspecialchars($usuario['NombreDepartamento']);
 $email_usuario = htmlspecialchars($usuario['Email']);
 $fono_usuario = htmlspecialchars($usuario['Telefono']);
 
+$user_rol = $_SESSION['user_rol'];
+
+
 $stmt_user->close();
 // Dejamos la conexión $conn abierta para el script
 ?>
@@ -63,11 +66,12 @@ $stmt_user->close();
         
         <header class="app-header">
             <h1>Plataforma de Adquisiciones</h1>
-            <span>Usuario: <?php echo $nombre_usuario; ?> (Solicitante)</span>
+            <span>Usuario: <strong> <?php echo $nombre_usuario; ?> </strong>(<?php echo htmlspecialchars($user_rol); ?>)
+        </span>
         </header>
 
         <main class="app-content">
-            <form id="form-crear-orden" action="procesar_orden.php" method="POST">
+        <form id="form-crear-orden" action="procesar_orden.php" method="POST" enctype="multipart/form-data">
 
                 <div id="form-view">
                     <h2>Formulario de Creación de Orden de Pedido</h2>
@@ -107,7 +111,7 @@ $stmt_user->close();
                         <div class="form-grid">
                             <div class="form-group">
                                 <label for="nombre-orden">Nombre de la Compra <span style="color: red;">*</span></label>
-                                <input type="text" id="nombre-orden" name="nombre_orden" placeholder="Ej: Compra de insumos para..." required>
+                                <input type="text" id="nombre-orden" name="nombre_orden"  required>
                             </div>
                             <div class="form-group">
                                 <label for="plazo-max">Plazo Máximo de Entrega <span style="color: red;">*</span></label>
@@ -122,6 +126,7 @@ $stmt_user->close();
                                     <option value="Trato Directo">Trato Directo</option>
                                     <option value="Licitación Pública">Licitación Pública</option>
                                     <option value="Licitación Privada">Licitación Privada</option>
+                                    <option value="Suministro">Suministro</option>
                                 </select>
                             </div>
                         </div>
@@ -135,12 +140,12 @@ $stmt_user->close();
                         <legend>3. Imputación Presupuestaria</legend>
                         <div class="form-grid">
                             <div class="form-group">
-                                <label for="presupuesto">Presupuesto (Nombre/Código) <span style="color: red;">*</span></label>
-                                <input type="text" id="presupuesto" name="presupuesto" placeholder="Ej: 215.22.05.004" required>
+                                <label for="presupuesto">Presupuesto  <span style="color: red;">*</span></label>
+                                <input type="text" id="presupuesto" name="presupuesto" required>
                             </div>
                             <div class="form-group">
                                 <label for="cuenta_presupuestaria">Cuenta Presupuestaria <span style="color: red;">*</span></label>
-                                <input type="text" id="cuenta_presupuestaria" name="cuenta_presupuestaria" placeholder="Ingrese nombre cuenta" required>
+                                <input type="text" id="cuenta_presupuestaria" name="cuenta_presupuestaria" >
                             </div>
                             <div class="form-group">
                                 <label for="subprog">Subprograma <span style="color: red;">*</span></label>
@@ -149,15 +154,56 @@ $stmt_user->close();
                                     <option value="Subprog 1"> 1</option>
                                     <option value="Subprog 2"> 2</option>
                                     <option value="Subprog 3"> 3</option>
+                                    <option value="Subprog 4"> 4</option>
+                                    <option value="Subprog 5"> 5</option>
+                                    <option value="Subprog 6"> 6</option>
                                 </select>
                             </div>
                             <div class="form-group">
                                 <label for="cc">Centro de Costo</label>
-                                <input type="text" id="cc" name="centro_costos" placeholder="000000 - Dirección de Obras">
+                                <input type="text" id="cc" name="centro_costos" placeholder="000000">
                             </div>
                         </div>
                     </fieldset>
 
+                    <fieldset id="fieldset-licitacion-publica" style="display: none;">
+                        <legend>3.6. Ingresar el ID de la Licitacion Publica correspondiente</legend>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="id_licitacion_publica">ID Licitacion Publica <span style="color: red;">*</span></label>
+                                <select id="id_licitacion_publica" name="id_licitacion_publica" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="ID-001">ID-001</option>
+                                    <option value="ID-002">ID-002</option>
+                                    <option value="ID-003">ID-003</option>
+                                </select>
+                            </div>
+                        </div>
+                    </fieldset>
+
+
+
+                    <fieldset id="fieldset-trato-directo" style="display: none;">
+                        <legend>3.5. Documentos Requeridos (Trato Directo)</legend>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="cotizacion_file">1° Cotización <span style="color: red;">*</span></label>
+                                <input type="file" id="cotizacion_file" name="cotizacion_file" accept=".pdf,.doc,.docx,.jpg,.png,.xls,.xlsx">
+                            </div>
+                            <div class="form-group">
+                                <label for="memorando_file">2° Memorando <span style="color: red;">*</span></label>
+                                <input type="file" id="memorando_file" name="memorando_file" accept=".pdf,.doc,.docx,.jpg,.png,.xls,.xlsx">
+                            </div>
+                            <div class="form-group">
+                                <label for="decreto_file">3° Decreto Autoriza Trato Directo <span style="color: red;">*</span></label>
+                                <input type="file" id="decreto_file" name="decreto_file" accept=".pdf,.doc,.docx,.jpg,.png,.xls,.xlsx">
+                            </div>
+                        </div>
+                        <p style="font-size: 0.9em; color: #555;">(Se deben adjuntar los 3 documentos para continuar)</p>
+                    </fieldset>
+
+
+                
                     <fieldset>
                         <legend>4. Detalle de Productos/Servicios</legend>
                         <table id="items-table">
@@ -183,9 +229,20 @@ $stmt_user->close();
                         <button type="button" class="btn btn-add-item">➕ Agregar Ítem</button>
                     </fieldset>
 
+
+                    <fieldset>
+                        <legend>4.5. Archivos Adicionales (Opcional)</legend>
+                        <div class="form-group full-width">
+                            <label for="archivos_adicionales">Adjuntar otros documentos </label>
+                            
+                            <input type="file" id="archivos_adicionales" name="archivos_adicionales[]" multiple accept=".pdf,.doc,.docx,.jpg,.png,.xls,.xlsx">
+                        </div>
+                    </fieldset>
+
                     <fieldset>
                         <legend>5. Totales (Cálculo Automático)</legend>
                         <div class="totals-grid">
+ 
                             <label id="label-valor-neto">Valor Neto:</label>
                             <input id="input-valor-neto" type="text" value="0" disabled>
                             
@@ -205,7 +262,7 @@ $stmt_user->close();
                         <a href="index.php" class="btn btn-danger">Cancelar</a>
                         <button type="submit" class="btn btn-success">➡️ Enviar a Aprobación</button>
                     </div>
-                </div>
+                
 
             </form>
         </main>
