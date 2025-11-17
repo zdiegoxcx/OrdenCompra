@@ -22,6 +22,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     try {
         // 6. Recoger datos del formulario
         $solicitante_id = $_SESSION['user_id'];
+        $solicitante_rol = $_SESSION['user_rol'];
+        
         $nombre_orden = $_POST['nombre_orden'];
         $plazo_maximo = $_POST['plazo_maximo'];
         $tipo_compra = $_POST['tipo_compra'];
@@ -38,7 +40,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $valor_total = $_POST['valor_total_hidden'];
         
         // Estado inicial
-        $estado = 'Pendiente Aprobación';
+        if ($solicitante_rol === 'Director') {
+            $estado = 'Pend. Firma Director';
+        } else {
+            // Para 'Profesional' o cualquier otro rol que cree
+            $estado = 'Pend. Mi Firma';
+        }
 
         // 7. --- INSERTAR EN LA TABLA 'Orden_Pedido' ---
         $sql_orden = "INSERT INTO Orden_Pedido 
@@ -47,7 +54,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                       VALUES (?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         $stmt_orden = $conn->prepare($sql_orden);
-        $stmt_orden->bind_param("issssssddddss", 
+        $stmt_orden->bind_param("issssssdddsss", 
             $solicitante_id, $nombre_orden, $tipo_compra, $presupuesto, $subprog, $centro_costos, 
             $plazo_maximo, $iva, $valor_neto, $valor_total, $estado, $motivo_compra, $cuenta_presupuestaria);
         

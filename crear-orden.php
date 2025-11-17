@@ -77,10 +77,10 @@ $stmt_user->close();
                     <h2>Formulario de Creación de Orden de Pedido</h2>
 
                     <fieldset>
-                        <legend>1. Datos del Solicitante (Autocompletado)</legend>
+                        <legend>1. Datos del Solicitante</legend>
                         <div class="form-grid">
                             <div class="form-group">
-                                <label>N° Requerimiento</label>
+                                <label>N°</label>
                                 <input type="text" value="(Automático)" disabled>
                             </div>
                             <div class="form-group">

@@ -28,15 +28,25 @@ $types = ""; // String para los tipos de parámetros (i = integer, s = string)
 
 if ($user_rol === 'Director') {
     // Lógica del Director:
-    // Ver órdenes de su depto que esperan firma ('Pendiente Aprobación') O las suyas propias.
+    // Ver órdenes de su depto que esperan SU firma ('Pend. Firma Director') O las suyas propias.
     
     $sql_join = " JOIN Usuario u ON op.Solicitante_Id = u.Id";
-    $sql_where = " WHERE (u.Departamento_Id = ? AND op.Estado = 'Pendiente Aprobación') OR (op.Solicitante_Id = ?)";
+    // $sql_where = " WHERE (u.Departamento_Id = ? AND op.Estado = 'Pendiente Aprobación') OR (op.Solicitante_Id = ?)"; // <-- ANTIGUO
+    $sql_where = " WHERE (u.Departamento_Id = ? AND op.Estado = 'Pend. Firma Director') OR (op.Solicitante_Id = ?)"; // <-- NUEVO
     
     $sql = $sql_base . $sql_join . $sql_where . " ORDER BY op.Id DESC";
     
     $params = [$user_depto_id, $user_id];
     $types = "ii"; // Dos enteros (department_id, user_id)
+
+} else if ($user_rol === 'Alcalde') { // <-- NUEVO ROL AÑADIDO
+    // Lógica del Alcalde:
+    // Ver órdenes que esperan SU firma ('Pend. Firma Alcalde') O las suyas propias.
+    $sql_where = " WHERE op.Estado = 'Pend. Firma Alcalde' OR op.Solicitante_Id = ?";
+    $sql = $sql_base . $sql_where . " ORDER BY op.Id DESC";
+    
+    $params = [$user_id];
+    $types = "i"; // Un entero (user_id)
 
 } else {
     // Lógica del Solicitante (Rol 'Profesional' o cualquier otro)
@@ -63,13 +73,22 @@ $resultado = $stmt->get_result();
 
 // (Tu función getStatusClass sigue igual)
 function getStatusClass($estado) {
+    // Convertimos a minúsculas para evitar errores de mayúsculas/minúsculas
     switch (strtolower($estado)) {
-        case 'aprobado': return 'status-aprobado';
-        case 'pendiente aprobación':
-        case 'pend. director': return 'status-pendiente-firma';
-        case 'pend. alcalde': return 'status-pendiente';
-        case 'pendiente mi firma': return 'status-borrador';
-        default: return 'status-borrador';
+        case 'aprobado': 
+            return 'status-aprobado';
+        case 'pendiente mi firma': // Estado del solicitante
+            return 'status-borrador';
+        case 'pend. mi firma': // Alias
+            return 'status-borrador';
+        case 'pend. firma director': // Estado del director
+            return 'status-pendiente-firma';
+        case 'pend. firma alcalde': // Estado del alcalde
+            return 'status-pendiente';
+        case 'rechazada': // Estado de rechazo
+            return 'status-rechazado';
+        default: 
+            return 'status-borrador';
     }
 }
 ?>
@@ -80,6 +99,13 @@ function getStatusClass($estado) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plataforma de Adquisiciones - Inicio</title>
     <link rel="stylesheet" href="css/styles.css">
+    <style>
+    .status-rechazado {
+            background-color: #dc3545;
+            color: white;
+        }
+
+    </style>
 </head>
 <body>
 
