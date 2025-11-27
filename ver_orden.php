@@ -27,11 +27,6 @@ $sql_orden = "
         u.Telefono AS Fono_Solicitante,
         u.Departamento_Id AS Solicitante_Depto_Id,
         d.Nombre AS Nombre_Departamento
-        /* , op.Id_Licitacion -- (Estos campos aún no se guardan)
-        , op.Archivo_Cotizacion 
-        , op.Archivo_Memorando 
-        , op.Archivo_Decreto 
-        */
     FROM Orden_Pedido op
     LEFT JOIN Usuario u ON op.Solicitante_Id = u.Id
     LEFT JOIN Departamento d ON u.Departamento_Id = d.Id
@@ -48,14 +43,27 @@ if ($resultado_orden->num_rows === 0) {
 }
 $orden = $resultado_orden->fetch_assoc();
 
-// 6. Consulta de los Ítems
+// 6. Consulta de los Ítems (Incluyendo la nueva columna Codigo_Producto)
 $sql_items = "SELECT * FROM Orden_Item WHERE Orden_Id = ?";
 $stmt_items = $conn->prepare($sql_items);
 $stmt_items->bind_param("i", $orden_id);
 $stmt_items->execute();
 $resultado_items = $stmt_items->get_result();
 
-// 7. --- LÓGICA DE VISUALIZACIÓN DE FIRMA ---
+// 7. --- NUEVA CONSULTA: ARCHIVOS ADJUNTOS ---
+// Traemos todos los archivos asociados a esta orden desde la nueva tabla
+$sql_archivos = "SELECT * FROM Orden_Archivos WHERE Orden_Id = ?";
+$stmt_files = $conn->prepare($sql_archivos);
+$stmt_files->bind_param("i", $orden_id);
+$stmt_files->execute();
+$res_files = $stmt_files->get_result();
+
+$archivos = [];
+while($f = $res_files->fetch_assoc()) {
+    $archivos[] = $f;
+}
+
+// 8. --- LÓGICA DE VISUALIZACIÓN DE FIRMA ---
 $user_id_actual = $_SESSION['user_id'];
 $user_rol_actual = $_SESSION['user_rol'];
 $user_depto_id_actual = $_SESSION['user_depto_id'];
@@ -63,6 +71,7 @@ $orden_estado = $orden['Estado'];
 $orden_solicitante_id = $orden['Solicitante_Id'];
 $orden_solicitante_depto_id = $orden['Solicitante_Depto_Id'];
 $mostrar_firma_box = false;
+
 if ($orden_estado === 'Pend. Mi Firma' && $user_id_actual === $orden_solicitante_id) {
     $mostrar_firma_box = true;
 }
@@ -73,22 +82,24 @@ elseif ($orden_estado === 'Pend. Firma Alcalde' && $user_rol_actual === 'Alcalde
     $mostrar_firma_box = true;
 }
 
-// 8. --- LÓGICA DE VISUALIZACIÓN DE TIPO DE COMPRA ---
+// 9. --- LÓGICA DE VISUALIZACIÓN DE TIPO DE COMPRA ---
 $tipo_compra = $orden['Tipo_Compra'];
 $isModoPresupuesto = false;
-$isTratoDirecto = false;
 $isLicitacion = false;
+$isConvenioMarco = false; // Nueva bandera
 
+// Clasificación de tipos
 switch ($tipo_compra) {
     case 'Compra Ágil':
     case 'Licitación Pública':
     case 'Licitación Privada':
         $isModoPresupuesto = true;
         break;
-    case 'Trato Directo':
-        $isTratoDirecto = true;
+    case 'Convenio Marco':
+        $isConvenioMarco = true; // Activamos la bandera
         break;
 }
+
 if ($tipo_compra === 'Licitación Pública' || $tipo_compra === 'Suministro') {
     $isLicitacion = true;
 }
@@ -101,6 +112,24 @@ if ($tipo_compra === 'Licitación Pública' || $tipo_compra === 'Suministro') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ver Orden N° <?php echo $orden['Id']; ?></title>
     <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* Pequeño ajuste para que los enlaces de archivo se vean como botones o links limpios */
+        .file-link {
+            display: inline-block;
+            margin-right: 10px;
+            margin-bottom: 5px;
+            padding: 5px 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #007bff;
+        }
+        .file-link:hover {
+            background-color: #e2e6ea;
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
 
@@ -205,7 +234,6 @@ if ($tipo_compra === 'Licitación Pública' || $tipo_compra === 'Suministro') {
                     </div>
                 </fieldset>
 
-                
                 <?php if ($isLicitacion): ?>
                 <fieldset id="fieldset-licitacion-publica">
                     <legend>3.6. ID de Licitación</legend>
@@ -218,26 +246,28 @@ if ($tipo_compra === 'Licitación Pública' || $tipo_compra === 'Suministro') {
                 </fieldset>
                 <?php endif; ?>
 
-
-                <?php if ($isTratoDirecto): ?>
-                <fieldset id="fieldset-trato-directo">
-                    <legend>3.5. Documentos Requeridos (Trato Directo)</legend>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>1° Cotización</label>
-                            <a href="/uploads/<?php echo htmlspecialchars(isset($orden['Archivo_Cotizacion']) ? $orden['Archivo_Cotizacion'] : ''); ?>" target="_blank">Ver Archivo</a>
-                        </div>
-                        <div class="form-group">
-                            <label>2° Memorando</label>
-                            <a href="/uploads/<?php echo htmlspecialchars(isset($orden['Archivo_Memorando']) ? $orden['Archivo_Memorando'] : ''); ?>" target="_blank">Ver Archivo</a>
-                        </div>
-                        <div class="form-group">
-                            <label>3° Decreto Autoriza Trato Directo</label>
-                            <a href="/uploads/<?php echo htmlspecialchars(isset($orden['Archivo_Decreto']) ? $orden['Archivo_Decreto'] : ''); ?>" target="_blank">Ver Archivo</a>
-                        </div>
+                <fieldset>
+                    <legend>Documentos Adjuntos</legend>
+                    <div class="form-group full-width">
+                    <?php 
+                    if (count($archivos) > 0) {
+                        // Iteramos sobre todos los archivos encontrados en la BD
+                        foreach($archivos as $arch) {
+                            $nombre_mostrar = htmlspecialchars($arch['Nombre_Original']);
+                            $tipo_doc = htmlspecialchars($arch['Tipo_Documento']);
+                            $ruta = htmlspecialchars($arch['Ruta_Archivo']);
+                            
+                            echo "<div style='margin-bottom: 10px;'>";
+                            echo "<strong>$tipo_doc:</strong> ";
+                            echo "<a href='$ruta' target='_blank' class='file-link'>📄 $nombre_mostrar</a>";
+                            echo "</div>";
+                        }
+                    } else {
+                        echo "<p style='color: #666;'>No hay documentos adjuntos para esta orden.</p>";
+                    }
+                    ?>
                     </div>
                 </fieldset>
-                <?php endif; ?>
 
 
                 <fieldset>
@@ -246,10 +276,17 @@ if ($tipo_compra === 'Licitación Pública' || $tipo_compra === 'Suministro') {
                         <thead>
                             <tr>
                                 <th style="width: 10%;">Cantidad</th>
+                                
+                                <?php if ($isConvenioMarco): ?>
+                                    <th style="background-color: #e3f2fd;">ID Producto</th>
+                                <?php endif; ?>
+
                                 <th>Producto o Servicio</th>
                                 
-                                <th class="col-v-unitario" style="width: 20%; <?php if ($isModoPresupuesto) echo 'display: none;'; ?>">V. Unitario ($)</th>
-                                <th class="col-total-linea" style="width: 20%; <?php if ($isModoPresupuesto) echo 'display: none;'; ?>">Total Línea ($)</th>
+                                <?php if (!$isModoPresupuesto): ?>
+                                    <th class="col-v-unitario" style="width: 20%;">V. Unitario ($)</th>
+                                    <th class="col-total-linea" style="width: 20%;">Total Línea ($)</th>
+                                <?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
@@ -258,16 +295,30 @@ if ($tipo_compra === 'Licitación Pública' || $tipo_compra === 'Suministro') {
                                 while($item = $resultado_items->fetch_assoc()) {
                                     echo "<tr>";
                                     echo "<td>" . htmlspecialchars($item['Cantidad']) . "</td>";
+                                    
+                                    // NUEVA CELDA (Solo si es Convenio Marco)
+                                    if ($isConvenioMarco) {
+                                        // Usamos un ternario por si el campo está vacío en BD
+                                        $codigo = !empty($item['Codigo_Producto']) ? $item['Codigo_Producto'] : '-';
+                                        echo "<td style='background-color: #f1f8ff;'>" . htmlspecialchars($codigo) . "</td>";
+                                    }
+
                                     echo "<td>" . htmlspecialchars($item['Nombre_producto_servicio']) . "</td>";
                                     
-                                    // Ocultar TD si es modo presupuesto
-                                    echo "<td class" . ($isModoPresupuesto ? 'display: none;' : '') . "'>" . number_format($item['Valor_Unitario'], 0, ',', '.') . "</td>";
-                                    echo "<td class" . ($isModoPresupuesto ? 'display: none;' : '') . "'>" . number_format($item['Valor_Total'], 0, ',', '.') . "</td>";
+                                    if (!$isModoPresupuesto) {
+                                        echo "<td>" . number_format($item['Valor_Unitario'], 0, ',', '.') . "</td>";
+                                        echo "<td>" . number_format($item['Valor_Total'], 0, ',', '.') . "</td>";
+                                    }
                                     
                                     echo "</tr>";
                                 }
                             } else {
-                                echo "<tr><td colspan='4'>No se encontraron ítems para esta orden.</td></tr>";
+                                // Ajustamos el colspan dependiendo de las columnas visibles
+                                $colspan = 4;
+                                if ($isConvenioMarco) $colspan++;
+                                if ($isModoPresupuesto) $colspan -= 2;
+                                
+                                echo "<tr><td colspan='$colspan'>No se encontraron ítems para esta orden.</td></tr>";
                             }
                             ?>
                         </tbody>
@@ -348,9 +399,10 @@ if ($tipo_compra === 'Licitación Pública' || $tipo_compra === 'Suministro') {
     <script src="js/firma-logic.js"></script>
 
     <?php
-    // 8. Cerramos todas las conexiones
+    // 10. Cerrar conexiones
     $stmt_orden->close();
     $stmt_items->close(); 
+    $stmt_files->close(); // Cerramos el stmt de archivos también
     $conn->close();
     ?>
 </body>

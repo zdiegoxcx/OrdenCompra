@@ -1,26 +1,13 @@
 <?php
-// 1. Iniciar la sesión
 session_start();
+if (!isset($_SESSION['user_id'])) { header("HTTP/1.1 403 Forbidden"); exit; }
 
-// 2. ¡Guardia de Seguridad!
-if (!isset($_SESSION['user_id'])) {
-    // Si no está logueado, no puede procesar
-    header("HTTP/1.1 403 Forbidden");
-    exit;
-}
-
-// 3. Verificar que los datos vengan por POST
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-
-    // 4. Incluir conexión
     include 'conectar.php';
-
-    // 5. Iniciar una transacción
-    // Esto es CRUCIAL. O se inserta la orden Y sus items, o no se inserta NADA.
     $conn->begin_transaction();
 
     try {
-        // 6. Recoger datos del formulario
+        // ... (Recogida de datos simples igual que antes) ...
         $solicitante_id = $_SESSION['user_id'];
         $solicitante_rol = $_SESSION['user_rol'];
         
@@ -28,91 +15,127 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $plazo_maximo = $_POST['plazo_maximo'];
         $tipo_compra = $_POST['tipo_compra'];
         $motivo_compra = $_POST['motivo_compra'];
-        
         $presupuesto = $_POST['presupuesto'];
         $cuenta_presupuestaria = $_POST['cuenta_presupuestaria'];
         $subprog = $_POST['subprog'];
         $centro_costos = $_POST['centro_costos'];
 
-        // Recoger totales (calculados por JS y enviados en campos hidden)
         $valor_neto = $_POST['valor_neto_hidden'];
         $iva = $_POST['iva_hidden'];
         $valor_total = $_POST['valor_total_hidden'];
         
-        // Estado inicial
-        if ($solicitante_rol === 'Director') {
-            $estado = 'Pend. Firma Director';
-        } else {
-            // Para 'Profesional' o cualquier otro rol que cree
-            $estado = 'Pend. Mi Firma';
+        $estado = ($solicitante_rol === 'Director') ? 'Pend. Firma Director' : 'Pend. Mi Firma';
+
+        // 1. Insertar Orden
+        $sql_orden = "INSERT INTO Orden_Pedido (Solicitante_Id, Nombre_Orden, Fecha_Creacion, Tipo_Compra, Presupuesto, Subprog, Centro_Costos, Plazo_maximo, Iva, Valor_neto, Valor_total, Estado, Motivo_Compra, Cuenta_Presupuestaria) VALUES (?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $stmt_orden = $conn->prepare($sql_orden);
+        $stmt_orden->bind_param("issssssdddsss", $solicitante_id, $nombre_orden, $tipo_compra, $presupuesto, $subprog, $centro_costos, $plazo_maximo, $iva, $valor_neto, $valor_total, $estado, $motivo_compra, $cuenta_presupuestaria);
+        $stmt_orden->execute();
+        $orden_id_nueva = $conn->insert_id; // ID generado
+
+        // -----------------------------------------------------------------
+        // 2. NUEVA LÓGICA DE ARCHIVOS (Trato Directo y Adicionales)
+        // -----------------------------------------------------------------
+        
+        $uploadDir = 'uploads/'; // Asegúrate de crear esta carpeta
+        
+        // Función auxiliar para mover y guardar en BD
+        function subirArchivo($fileInputName, $tipoDoc, $ordenId, $conn, $uploadDir) {
+            // Verificar si se subió el archivo (Error 0 = OK)
+            if (isset($_FILES[$fileInputName]) && $_FILES[$fileInputName]['error'] === UPLOAD_ERR_OK) {
+                
+                $nombreOriginal = basename($_FILES[$fileInputName]['name']);
+                $ext = pathinfo($nombreOriginal, PATHINFO_EXTENSION);
+                
+                // Generar nombre único: orden_ID_tipo_timestamp.ext
+                $nombreGuardado = "orden_{$ordenId}_{$tipoDoc}_" . time() . "." . $ext;
+                $rutaDestino = $uploadDir . $nombreGuardado;
+
+                if (move_uploaded_file($_FILES[$fileInputName]['tmp_name'], $rutaDestino)) {
+                    // Insertar en la tabla nueva Orden_Archivos
+                    $sql_archivo = "INSERT INTO Orden_Archivos (Orden_Id, Nombre_Archivo, Nombre_Original, Tipo_Documento, Ruta_Archivo) VALUES (?, ?, ?, ?, ?)";
+                    $stmt_arch = $conn->prepare($sql_archivo);
+                    $stmt_arch->bind_param("issss", $ordenId, $nombreGuardado, $nombreOriginal, $tipoDoc, $rutaDestino);
+                    $stmt_arch->execute();
+                    $stmt_arch->close();
+                }
+            }
         }
 
-        // 7. --- INSERTAR EN LA TABLA 'Orden_Pedido' ---
-        $sql_orden = "INSERT INTO Orden_Pedido 
-                        (Solicitante_Id, Nombre_Orden, Fecha_Creacion, Tipo_Compra, Presupuesto, Subprog, Centro_Costos, 
-                         Plazo_maximo, Iva, Valor_neto, Valor_total, Estado, Motivo_Compra, Cuenta_Presupuestaria)
-                      VALUES (?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        
-        $stmt_orden = $conn->prepare($sql_orden);
-        $stmt_orden->bind_param("issssssdddsss", 
-            $solicitante_id, $nombre_orden, $tipo_compra, $presupuesto, $subprog, $centro_costos, 
-            $plazo_maximo, $iva, $valor_neto, $valor_total, $estado, $motivo_compra, $cuenta_presupuestaria);
-        
-        $stmt_orden->execute();
-        
-        // 8. ¡Obtener el ID de la orden que ACABAMOS de crear!
-        $orden_id_nueva = $conn->insert_id;
+        // A. Archivos de Trato Directo (Inputs individuales)
+        if ($tipo_compra === 'Trato Directo') {
+            subirArchivo('cotizacion_file', 'Cotizacion', $orden_id_nueva, $conn, $uploadDir);
+            subirArchivo('memorando_file', 'Memorando', $orden_id_nueva, $conn, $uploadDir);
+            subirArchivo('decreto_file', 'Decreto', $orden_id_nueva, $conn, $uploadDir);
+        }
 
-        // 9. --- INSERTAR EN LA TABLA 'Orden_Item' ---
+        // B. Archivos Adicionales (Input múltiple: name="archivos_adicionales[]")
+        // PHP organiza los arrays de archivos de forma extraña, hay que recorrerlos así:
+        if (isset($_FILES['archivos_adicionales'])) {
+            $files = $_FILES['archivos_adicionales'];
+            $count = count($files['name']);
+
+            for ($i = 0; $i < $count; $i++) {
+                if ($files['error'][$i] === UPLOAD_ERR_OK) {
+                    $nombreOriginal = basename($files['name'][$i]);
+                    $ext = pathinfo($nombreOriginal, PATHINFO_EXTENSION);
+                    $nombreGuardado = "orden_{$orden_id_nueva}_adicional_{$i}_" . time() . "." . $ext;
+                    $rutaDestino = $uploadDir . $nombreGuardado;
+
+                    if (move_uploaded_file($files['tmp_name'][$i], $rutaDestino)) {
+                        $sql_archivo = "INSERT INTO Orden_Archivos (Orden_Id, Nombre_Archivo, Nombre_Original, Tipo_Documento, Ruta_Archivo) VALUES (?, ?, ?, ?, ?)";
+                        $stmt_arch = $conn->prepare($sql_archivo);
+                        $tipoDoc = 'Adicional';
+                        $stmt_arch->bind_param("issss", $orden_id_nueva, $nombreGuardado, $nombreOriginal, $tipoDoc, $rutaDestino);
+                        $stmt_arch->execute();
+                        $stmt_arch->close();
+                    }
+                }
+            }
+        }
+
+        // -----------------------------------------------------------------
+        // 3. Insertar Items (CON LA NUEVA COLUMNA CODIGO)
+        // -----------------------------------------------------------------
         
-        // Recoger los arrays de items
         $item_cantidades = $_POST['item_cantidad'];
         $item_nombres = $_POST['item_nombre'];
         $item_unitarios = $_POST['item_v_unitario'];
+        
+        // NUEVO: Capturar array de códigos
+        // Si no se envió (porque estaba oculto), PHP puede dar null, lo manejamos.
+        $item_codigos = isset($_POST['item_codigo']) ? $_POST['item_codigo'] : array_fill(0, count($item_cantidades), null);
 
-        // Preparar la consulta para los items (solo una vez)
-        $sql_item = "INSERT INTO Orden_Item 
-                       (Orden_Id, Nombre_producto_servicio, Cantidad, Valor_Unitario, Valor_Total)
-                     VALUES (?, ?, ?, ?, ?)";
+        // Actualizamos el INSERT para incluir Codigo_Producto
+        $sql_item = "INSERT INTO Orden_Item (Orden_Id, Nombre_producto_servicio, Codigo_Producto, Cantidad, Valor_Unitario, Valor_Total) VALUES (?, ?, ?, ?, ?, ?)";
         $stmt_item = $conn->prepare($sql_item);
 
-        // Recorrer el array de items y ejecutarlos
         for ($i = 0; $i < count($item_cantidades); $i++) {
             $cantidad = (int)$item_cantidades[$i];
             $nombre = $item_nombres[$i];
+            $codigo = isset($item_codigos[$i]) ? $item_codigos[$i] : ''; // Codigo o vacío
             $v_unitario = (float)$item_unitarios[$i];
-            
-            // Recalcular el total en el servidor por seguridad
             $v_total_linea = $cantidad * $v_unitario; 
             
-            $stmt_item->bind_param("isidd", 
-                $orden_id_nueva, $nombre, $cantidad, $v_unitario, $v_total_linea);
-            
+            // bind_param: Orden_Id(i), Nombre(s), Codigo(s), Cant(i), Unit(d), Total(d)
+            $stmt_item->bind_param("issidd", $orden_id_nueva, $nombre, $codigo, $cantidad, $v_unitario, $v_total_linea);
             $stmt_item->execute();
         }
 
-        // 10. ¡ÉXITO! Confirmar la transacción
         $conn->commit();
-        
         $stmt_orden->close();
         $stmt_item->close();
         $conn->close();
 
-        // 11. Redirigir al index con un mensaje de éxito
         header("Location: index.php?creacion=exito");
         exit;
 
     } catch (Exception $e) {
-        // 12. ¡ERROR! Revertir todo
         $conn->rollback();
         $conn->close();
-        
-        // Mostrar un error (en un sistema real, esto se loguearía)
         die("Error al crear la orden: " . $e->getMessage());
     }
-
 } else {
-    // Si no es POST, redirigir
     header("Location: crear-orden.php");
     exit;
 }

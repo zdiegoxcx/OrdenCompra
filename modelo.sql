@@ -86,3 +86,18 @@ CREATE TABLE Firmas_Orden (
     FOREIGN KEY (Usuario_Id) REFERENCES Usuario(Id) ON DELETE SET NULL,
     FOREIGN KEY (Orden_Id) REFERENCES Orden_Pedido(Id) ON DELETE CASCADE
 );
+
+-- 1. Nueva tabla para manejar TODOS los archivos (Trato directo y adicionales)
+CREATE TABLE Orden_Archivos (
+    Id INT PRIMARY KEY AUTO_INCREMENT,
+    Orden_Id INT NOT NULL,
+    Nombre_Archivo VARCHAR(255) NOT NULL, -- Nombre guardado en disco (hash o time)
+    Nombre_Original VARCHAR(255) NOT NULL, -- Nombre real que subió el usuario
+    Tipo_Documento VARCHAR(50), -- Ej: 'Cotizacion', 'Memorando', 'Decreto', 'Adicional'
+    Ruta_Archivo VARCHAR(255), -- Ruta relativa: 'uploads/archivo.pdf'
+    FOREIGN KEY (Orden_Id) REFERENCES Orden_Pedido(Id) ON DELETE CASCADE
+);
+
+-- 2. Modificar la tabla de Ítems para agregar el ID del Producto
+ALTER TABLE Orden_Item
+ADD COLUMN Codigo_Producto VARCHAR(100) AFTER Nombre_producto_servicio;
