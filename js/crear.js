@@ -56,6 +56,111 @@ document.addEventListener('DOMContentLoaded', () => {
         valorTotalHidden.value = valorTotal;
     }
 
+
+    // --- LÓGICA DE CARGA ACUMULATIVA DE ARCHIVOS ---
+    
+    function habilitarCargaAcumulativa(inputId, listaId, maxArchivos) {
+        const input = document.getElementById(inputId);
+        const lista = document.getElementById(listaId);
+        
+        // Si no existen en el HTML (ej. porque el tipo de compra ocultó el fieldset), salimos
+        if (!input || !lista) return;
+
+        let archivosAcumulados = []; // Aquí guardamos los archivos realmente
+
+        input.addEventListener('change', (e) => {
+            // Obtener los archivos nuevos que el usuario acaba de seleccionar
+            const nuevosArchivos = Array.from(input.files);
+            
+            // Validar límite de cantidad
+            if (archivosAcumulados.length + nuevosArchivos.length > maxArchivos) {
+                alert(`Solo puedes subir un máximo de ${maxArchivos} archivos para este ítem.`);
+                // Re-asignamos los archivos que ya teníamos para no perderlos
+                actualizarInputReal(); 
+                return;
+            }
+
+            // Agregamos los nuevos al arreglo acumulado
+            nuevosArchivos.forEach(file => {
+                // (Opcional) Evitar duplicados por nombre
+                if (!archivosAcumulados.some(f => f.name === file.name)) {
+                    archivosAcumulados.push(file);
+                }
+            });
+
+            // Actualizamos el input y la vista
+            actualizarInputReal();
+            renderizarLista();
+        });
+
+        function actualizarInputReal() {
+            // Usamos DataTransfer para crear una nueva lista de archivos válida para el input
+            const dt = new DataTransfer();
+            archivosAcumulados.forEach(file => dt.items.add(file));
+            input.files = dt.files; // ¡Aquí ocurre la magia! El input ahora tiene TODO.
+        }
+
+        function renderizarLista() {
+            lista.innerHTML = ''; // Limpiar vista actual
+            
+            if (archivosAcumulados.length === 0) return;
+
+            // Crear tabla o lista pequeña visual
+            const ul = document.createElement('ul');
+            ul.style.listStyle = 'none';
+            ul.style.padding = '0';
+            ul.style.marginTop = '5px';
+
+            archivosAcumulados.forEach((file, index) => {
+                const li = document.createElement('li');
+                li.style.marginBottom = '5px';
+                li.style.fontSize = '0.9em';
+                li.style.backgroundColor = '#f8f9fa';
+                li.style.padding = '5px';
+                li.style.border = '1px solid #ddd';
+                li.style.borderRadius = '4px';
+                li.style.display = 'flex';
+                li.style.justifyContent = 'space-between';
+                li.style.alignItems = 'center';
+
+                // Texto del nombre
+                const spanNombre = document.createElement('span');
+                spanNombre.textContent = file.name;
+
+                // Botón eliminar
+                const btnEliminar = document.createElement('button');
+                btnEliminar.textContent = '❌';
+                btnEliminar.style.border = 'none';
+                btnEliminar.style.background = 'transparent';
+                btnEliminar.style.cursor = 'pointer';
+                btnEliminar.style.color = 'red';
+                btnEliminar.style.marginLeft = '10px';
+                
+                // Acción de eliminar
+                btnEliminar.onclick = (e) => {
+                    e.preventDefault(); // Evitar que envíe el form
+                    archivosAcumulados.splice(index, 1); // Quitar del array
+                    actualizarInputReal(); // Actualizar input oculto
+                    renderizarLista(); // Actualizar vista
+                };
+
+                li.appendChild(spanNombre);
+                li.appendChild(btnEliminar);
+                ul.appendChild(li);
+            });
+
+            lista.appendChild(ul);
+        }
+    }
+
+    // --- INICIALIZAR LA FUNCIÓN PARA CADA INPUT ---
+    // Llamamos a la función pasando: ID del Input, ID del Div Lista, Máximo de Archivos
+    habilitarCargaAcumulativa('cotizacion_file', 'lista-cotizacion', 3);
+    habilitarCargaAcumulativa('memorando_file', 'lista-memorando', 3);
+    habilitarCargaAcumulativa('decreto_file', 'lista-decreto', 3);
+    habilitarCargaAcumulativa('archivos_adicionales', 'lista-adicionales', 3);
+
+
     // --- MANEJO DE VISIBILIDAD DE COLUMNAS ---
     function manejarTipoCompra() {
         const tipoSeleccionado = tipoCompraSelect.value;

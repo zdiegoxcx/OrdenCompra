@@ -13,6 +13,20 @@ if (!isset($_SESSION['user_id'])) {
 // 3. Si pasó la guardia, incluir la conexión
 include 'conectar.php';
 
+// Verifica si hay órdenes 'En Espera' que ya expiraron (más de 24 hrs)
+$conn->query("
+    UPDATE Orden_Pedido op
+    INNER JOIN (
+        SELECT Orden_Id, MAX(Fecha_Gestion) as Ultima_Gestion 
+        FROM Gestion_Compra 
+        GROUP BY Orden_Id
+    ) gc ON op.Id = gc.Orden_Id
+    SET op.Estado = 'Sin respuesta del vendedor'
+    WHERE op.Estado = 'En Espera'
+    AND gc.Ultima_Gestion < DATE_SUB(NOW(), INTERVAL 10 MINUTE)
+");
+
+
 // 4. Obtener los datos del usuario desde la sesión
 $user_id = $_SESSION['user_id'];
 $user_nombre = $_SESSION['user_nombre'];
@@ -47,6 +61,24 @@ if ($user_rol === 'Director') {
     
     $params = [$user_id];
     $types = "i"; // Un entero (user_id)
+
+} else if ($user_rol === 'EncargadoAdquision') {
+    // Lógica del Encargado de Adquisiciones:
+    // 1. Ve sus propias órdenes (como cualquier solicitante).
+    // 2. Ve TODAS las órdenes 'Aprobado' (listas para gestionar).
+    // 3. Ve las órdenes que él mismo puso 'En Espera' para darles seguimiento.
+    // 4. Ve las expiradas ('Sin respuesta del vendedor').
+    
+    $sql_where = " WHERE op.Solicitante_Id = ? 
+                   OR op.Estado IN ('Aprobado', 'En Espera', 'Sin respuesta del vendedor')";
+    
+    // NOTA: Si quieres que solo vea las 'En Espera' que gestionó ÉL, habría que hacer un JOIN con Gestion_Compra.
+    // Por ahora, asumimos que el Encargado ve todo lo que está en proceso de compra.
+    
+    $sql = $sql_base . $sql_where . " ORDER BY op.Id DESC";
+    
+    $params = [$user_id];
+    $types = "i";
 
 } else {
     // Lógica del Solicitante (Rol 'Profesional' o cualquier otro)

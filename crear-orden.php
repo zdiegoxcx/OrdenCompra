@@ -102,6 +102,10 @@ $stmt_user->close();
                                     <option value="">Seleccione...</option>
                                     <option value="Subprog 1">1</option>
                                     <option value="Subprog 2">2</option>
+                                    <option value="Subprog 3">3</option>
+                                    <option value="Subprog 4">4</option>
+                                    <option value="Subprog 5">5</option>
+                                    <option value="Subprog 6">6</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -127,20 +131,29 @@ $stmt_user->close();
                     <fieldset id="fieldset-trato-directo" style="display: none;">
                         <legend>3.5. Documentos Requeridos (Trato Directo)</legend>
                         <div class="form-grid">
+
                             <div class="form-group">
-                                <label>1° Cotización <span style="color: red;">*</span></label>
-                                <input type="file" id="cotizacion_file" name="cotizacion_file">
+                                <label>1° Cotización (Máx 3) <span style="color: red;">*</span></label>
+                                <input type="file" id="cotizacion_file" name="cotizacion_file[]" multiple>
+                                <div id="lista-cotizacion" class="file-list"></div>
                             </div>
+
                             <div class="form-group">
-                                <label>2° Memorando <span style="color: red;">*</span></label>
-                                <input type="file" id="memorando_file" name="memorando_file">
+                                <label>2° Memorando (Máx 3) <span style="color: red;">*</span></label>
+                                <input type="file" id="memorando_file" name="memorando_file[]" multiple>
+                                <div id="lista-memorando" class="file-list"></div>
                             </div>
+
                             <div class="form-group">
-                                <label>3° Decreto <span style="color: red;">*</span></label>
-                                <input type="file" id="decreto_file" name="decreto_file">
+                                <label>3° Decreto (Máx 3) <span style="color: red;">*</span></label>
+                                <input type="file" id="decreto_file" name="decreto_file[]" multiple>
+                                <div id="lista-decreto" class="file-list"></div>
                             </div>
+
+
                         </div>
                     </fieldset>
+
 
                     <fieldset>
                         <legend>4. Detalle de Productos/Servicios</legend>
@@ -175,13 +188,17 @@ $stmt_user->close();
                         <button type="button" class="btn btn-add-item">➕ Agregar Ítem</button>
                     </fieldset>
 
+
                     <fieldset>
                         <legend>4.5. Archivos Adicionales (Opcional)</legend>
                         <div class="form-group full-width">
-                            <label>Adjuntar otros documentos</label>
-                            <input type="file" name="archivos_adicionales[]" multiple>
+                            <label>Adjuntar otros documentos (Máx 3)</label>
+                            <input type="file" id="archivos_adicionales" name="archivos_adicionales[]" multiple>
+                            
+                            <div id="lista-adicionales" class="file-list"></div>
                         </div>
                     </fieldset>
+
 
                     <fieldset>
                         <legend>5. Totales (Cálculo Automático)</legend>

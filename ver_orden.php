@@ -104,6 +104,12 @@ if ($tipo_compra === 'Licitación Pública' || $tipo_compra === 'Suministro') {
     $isLicitacion = true;
 }
 
+
+$mostrar_gestion_box = false;
+if ($user_rol_actual === 'EncargadoAdquision' && $orden['Estado'] === 'Aprobado') {
+    $mostrar_gestion_box = true;
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -354,6 +360,31 @@ if ($tipo_compra === 'Licitación Pública' || $tipo_compra === 'Suministro') {
                 </fieldset>
                 
                 
+                <?php if ($mostrar_gestion_box): ?>
+                <div id="gestion-view" style="margin-top: 20px; border-top: 2px solid #004a99; padding-top: 20px;">
+                    <form action="procesar_gestion.php" method="POST">
+                        <fieldset>
+                            <legend>Gestionar Compra (Encargado)</legend>
+                            <input type="hidden" name="orden_id" value="<?php echo $orden['Id']; ?>">
+                            
+                            <p>Al iniciar la gestión, la orden pasará a estado <strong>"En Espera"</strong>. Si no se recibe respuesta en 24 horas, el sistema la marcará como expirada.</p>
+
+                            <div class="form-grid">
+                                <div class="form-group full-width">
+                                    <label>Proveedor Contactado <span style="color: red;">*</span></label>
+                                    <input type="text" name="proveedor_nombre" required placeholder="Nombre del proveedor o empresa...">
+                                </div>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">💾 Guardar e Iniciar Espera</button>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+                <?php endif; ?>
+
+
                 <?php if ($mostrar_firma_box): ?>
                 <div id="firma-view">
                     <fieldset id="fieldset-firma-accion" data-orden-id="<?php echo $orden['Id']; ?>">

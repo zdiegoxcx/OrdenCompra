@@ -34,66 +34,65 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $orden_id_nueva = $conn->insert_id; // ID generado
 
         // -----------------------------------------------------------------
-        // 2. NUEVA LÓGICA DE ARCHIVOS (Trato Directo y Adicionales)
+        // 2. NUEVA LÓGICA DE ARCHIVOS (Múltiples archivos por tipo con límite)
         // -----------------------------------------------------------------
-        
-        $uploadDir = 'uploads/'; // Asegúrate de crear esta carpeta
-        
-        // Función auxiliar para mover y guardar en BD
-        function subirArchivo($fileInputName, $tipoDoc, $ordenId, $conn, $uploadDir) {
-            // Verificar si se subió el archivo (Error 0 = OK)
-            if (isset($_FILES[$fileInputName]) && $_FILES[$fileInputName]['error'] === UPLOAD_ERR_OK) {
+
+        $uploadDir = 'uploads/'; // Asegúrate de que esta carpeta exista y tenga permisos
+
+        /**
+         * Función para procesar subidas múltiples con límite
+         * @param string $inputName Nombre del input en el formulario (sin los corchetes)
+         * @param string $tipoDoc   Nombre para la BD (Cotizacion, Memorando, etc.)
+         * @param int    $ordenId   ID de la orden
+         * @param object $conn      Conexión a BD
+         * @param string $dir       Directorio de destino
+         * @param int    $maxFiles  Límite de archivos permitidos
+         */
+        function subirArchivosMultiples($inputName, $tipoDoc, $ordenId, $conn, $dir, $maxFiles = 3) {
+            // Verificar si existe el input y si tiene archivos
+            if (isset($_FILES[$inputName]) && is_array($_FILES[$inputName]['name'])) {
                 
-                $nombreOriginal = basename($_FILES[$fileInputName]['name']);
-                $ext = pathinfo($nombreOriginal, PATHINFO_EXTENSION);
+                $files = $_FILES[$inputName];
+                $totalSubidos = count($files['name']);
                 
-                // Generar nombre único: orden_ID_tipo_timestamp.ext
-                $nombreGuardado = "orden_{$ordenId}_{$tipoDoc}_" . time() . "." . $ext;
-                $rutaDestino = $uploadDir . $nombreGuardado;
+                // El bucle se ejecutará máximo $maxFiles veces
+                $limite = min($totalSubidos, $maxFiles);
 
-                if (move_uploaded_file($_FILES[$fileInputName]['tmp_name'], $rutaDestino)) {
-                    // Insertar en la tabla nueva Orden_Archivos
-                    $sql_archivo = "INSERT INTO Orden_Archivos (Orden_Id, Nombre_Archivo, Nombre_Original, Tipo_Documento, Ruta_Archivo) VALUES (?, ?, ?, ?, ?)";
-                    $stmt_arch = $conn->prepare($sql_archivo);
-                    $stmt_arch->bind_param("issss", $ordenId, $nombreGuardado, $nombreOriginal, $tipoDoc, $rutaDestino);
-                    $stmt_arch->execute();
-                    $stmt_arch->close();
-                }
-            }
-        }
+                for ($i = 0; $i < $limite; $i++) {
+                    // Verificar errores individuales (0 = UPLOAD_ERR_OK)
+                    if ($files['error'][$i] === UPLOAD_ERR_OK) {
+                        
+                        $nombreOriginal = basename($files['name'][$i]);
+                        $ext = pathinfo($nombreOriginal, PATHINFO_EXTENSION);
+                        
+                        // Nombre único: orden_ID_TIPO_indice_timestamp.ext
+                        $nombreGuardado = "orden_{$ordenId}_{$tipoDoc}_{$i}_" . time() . "." . $ext;
+                        $rutaDestino = $dir . $nombreGuardado;
 
-        // A. Archivos de Trato Directo (Inputs individuales)
-        if ($tipo_compra === 'Trato Directo') {
-            subirArchivo('cotizacion_file', 'Cotizacion', $orden_id_nueva, $conn, $uploadDir);
-            subirArchivo('memorando_file', 'Memorando', $orden_id_nueva, $conn, $uploadDir);
-            subirArchivo('decreto_file', 'Decreto', $orden_id_nueva, $conn, $uploadDir);
-        }
-
-        // B. Archivos Adicionales (Input múltiple: name="archivos_adicionales[]")
-        // PHP organiza los arrays de archivos de forma extraña, hay que recorrerlos así:
-        if (isset($_FILES['archivos_adicionales'])) {
-            $files = $_FILES['archivos_adicionales'];
-            $count = count($files['name']);
-
-            for ($i = 0; $i < $count; $i++) {
-                if ($files['error'][$i] === UPLOAD_ERR_OK) {
-                    $nombreOriginal = basename($files['name'][$i]);
-                    $ext = pathinfo($nombreOriginal, PATHINFO_EXTENSION);
-                    $nombreGuardado = "orden_{$orden_id_nueva}_adicional_{$i}_" . time() . "." . $ext;
-                    $rutaDestino = $uploadDir . $nombreGuardado;
-
-                    if (move_uploaded_file($files['tmp_name'][$i], $rutaDestino)) {
-                        $sql_archivo = "INSERT INTO Orden_Archivos (Orden_Id, Nombre_Archivo, Nombre_Original, Tipo_Documento, Ruta_Archivo) VALUES (?, ?, ?, ?, ?)";
-                        $stmt_arch = $conn->prepare($sql_archivo);
-                        $tipoDoc = 'Adicional';
-                        $stmt_arch->bind_param("issss", $orden_id_nueva, $nombreGuardado, $nombreOriginal, $tipoDoc, $rutaDestino);
-                        $stmt_arch->execute();
-                        $stmt_arch->close();
+                        if (move_uploaded_file($files['tmp_name'][$i], $rutaDestino)) {
+                            // Guardar en Base de Datos
+                            $sql_archivo = "INSERT INTO Orden_Archivos (Orden_Id, Nombre_Archivo, Nombre_Original, Tipo_Documento, Ruta_Archivo) VALUES (?, ?, ?, ?, ?)";
+                            $stmt_arch = $conn->prepare($sql_archivo);
+                            $stmt_arch->bind_param("issss", $ordenId, $nombreGuardado, $nombreOriginal, $tipoDoc, $rutaDestino);
+                            $stmt_arch->execute();
+                            $stmt_arch->close();
+                        }
                     }
                 }
             }
         }
 
+        // A. Archivos de Trato Directo (Ahora soportan múltiples)
+        if ($tipo_compra === 'Trato Directo') {
+            // Llama a la función pasándole el nombre del input (sin [])
+            subirArchivosMultiples('cotizacion_file', 'Cotizacion', $orden_id_nueva, $conn, $uploadDir, 3);
+            subirArchivosMultiples('memorando_file', 'Memorando', $orden_id_nueva, $conn, $uploadDir, 3);
+            subirArchivosMultiples('decreto_file', 'Decreto', $orden_id_nueva, $conn, $uploadDir, 3);
+        }
+
+        // B. Archivos Adicionales (También limitado a 3)
+        subirArchivosMultiples('archivos_adicionales', 'Adicional', $orden_id_nueva, $conn, $uploadDir, 3);
+        
         // -----------------------------------------------------------------
         // 3. Insertar Items (CON LA NUEVA COLUMNA CODIGO)
         // -----------------------------------------------------------------
