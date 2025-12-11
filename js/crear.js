@@ -239,12 +239,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    /// --- AGREGAR FILA ---
-
+        // --- AGREGAR FILA ---
     function agregarFila() {
         const nuevaFila = document.createElement('tr');
         
-        // COHERENCIA: Usamos las mismas restricciones estrictas (sin signos matemáticos)
+        // COHERENCIA: V. Unitario ahora tiene el límite de 15 dígitos en el evento oninput
         nuevaFila.innerHTML = `
             <td>
                 <input type="number" name="item_cantidad[]" class="input-calc" value="1" min="1" max="999999" 
@@ -262,8 +261,9 @@ document.addEventListener('DOMContentLoaded', () => {
             </td>
 
             <td class="col-v-unitario">
-                <input type="number" name="item_v_unitario[]" class="input-v-unitario input-calc" value="0" min="0" max="9999999999" step="1" 
+                <input type="number" name="item_v_unitario[]" class="input-v-unitario input-calc" value="0" min="0" step="1" 
                     onkeydown="if(['e', 'E', '.', '-', '+'].includes(event.key)) event.preventDefault();"
+                    oninput="if(this.value.length > 15) this.value = this.value.slice(0, 15);"
                     required>
             </td>
 

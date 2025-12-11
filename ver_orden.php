@@ -432,6 +432,11 @@ if ($user_rol_actual === 'EncargadoAdquision' && $orden['Estado'] === 'Aprobado'
                         <?php endif; ?>
                     </fieldset>
                     <div class="form-actions">
+                        <a href="generar_pdf.php?id=<?php echo $orden['Id']; ?>" target="_blank" class="btn btn-primary" style="background-color: #dc3545; border-color: #dc3545;">
+                            Descargar PDF
+                        </a>
+
+
                         <a href="index.php" class="btn btn-secondary">Volver</a>
                     </div>
                 <?php endif; ?>

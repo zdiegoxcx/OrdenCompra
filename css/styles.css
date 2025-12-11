@@ -260,3 +260,148 @@ legend {
 .modal-show {
     display: block !important;
 }
+
+/* --- Estilos para la Búsqueda y Paginación --- */
+
+.search-container {
+    margin-bottom: 20px;
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+.search-form {
+    display: flex;
+    gap: 10px;
+}
+
+.search-form input[type="text"] {
+    flex: 1; /* Ocupa todo el espacio disponible */
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    gap: 5px;
+}
+
+.pagination a {
+    color: #007bff;
+    padding: 8px 16px;
+    text-decoration: none;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.pagination a.active {
+    background-color: #007bff;
+    color: white;
+    border: 1px solid #007bff;
+}
+
+.pagination a:hover:not(.active) {
+    background-color: #ddd;
+}
+
+
+/* --- Estilos para filas cliqueables --- */
+.clickable-row {
+    cursor: pointer; /* Transforma el cursor en una mano */
+    transition: background-color 0.2s ease;
+}
+
+.clickable-row:hover {
+    background-color: #e2e6ea; /* Color de fondo al pasar el mouse (gris claro azulado) */
+}
+
+/* Ajuste para que el hover no choque con el color de los encabezados si usas stripes */
+table tbody tr:hover td {
+    background-color: #e2e6ea;
+}
+
+
+/* --- FILTROS AVANZADOS --- */
+.search-container {
+    background-color: #f1f4f8;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #d1d9e6;
+    margin-bottom: 25px;
+}
+
+.filter-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.filter-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap; /* Para móviles */
+    align-items: flex-end; /* Alinear botones con inputs */
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-group label {
+    font-size: 0.85em;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #555;
+}
+
+.filter-group input, 
+.filter-group select {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    min-width: 150px;
+}
+
+/* Clases utilitarias para tamaños */
+.grow-1 { flex: 1; }
+.grow-2 { flex: 2; }
+
+.filter-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* Paginación y filas cliqueables (Ya deberías tener esto, pero por si acaso) */
+.pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    gap: 5px;
+}
+.pagination a {
+    color: #007bff;
+    padding: 8px 16px;
+    text-decoration: none;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+.pagination a.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+.clickable-row {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.clickable-row:hover {
+    background-color: #e9ecef !important;
+}

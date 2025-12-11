@@ -93,7 +93,10 @@ $stmt_user->close();
                         <div class="form-grid">
                             <div class="form-group">
                                 <label for="presupuesto">Presupuesto <span style="color: red;">*</span></label>
-                                <input type="number" id="presupuesto" name="presupuesto" min="1" step="1" onkeydown="if(['e', 'E', '.', '-', '+'].includes(event.key)) event.preventDefault();" placeholder="" required>
+                                <input type="number" id="presupuesto" name="presupuesto" min="1" step="1" 
+                                    onkeydown="if(['e', 'E', '.', '-', '+'].includes(event.key)) event.preventDefault();"
+                                    oninput="if(this.value.length > 15) this.value = this.value.slice(0, 15);"
+                                    placeholder="" required>
                             </div>
                             <div class="form-group">
                                 <label for="cuenta_presupuestaria">Cuenta Presupuestaria <span style="color: red;">*</span></label>
@@ -210,8 +213,9 @@ $stmt_user->close();
                                     </td>
 
                                     <td class="col-v-unitario">
-                                        <input type="number" name="item_v_unitario[]" class="input-v-unitario input-calc" value="0" min="0" max="9999999999" step="1" 
+                                        <input type="number" name="item_v_unitario[]" class="input-v-unitario input-calc" value="0" min="0" step="1" 
                                             onkeydown="if(['e', 'E', '.', '-', '+'].includes(event.key)) event.preventDefault();"
+                                            oninput="if(this.value.length > 15) this.value = this.value.slice(0, 15);"
                                             required>
                                     </td>
 
