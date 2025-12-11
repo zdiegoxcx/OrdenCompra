@@ -26,10 +26,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         $estado = ($solicitante_rol === 'Director') ? 'Pend. Firma Director' : 'Pend. Mi Firma';
 
+        $id_licitacion = isset($_POST['id_licitacion_publica']) ? $_POST['id_licitacion_publica'] : null;
+
         // 1. Insertar Orden
-        $sql_orden = "INSERT INTO Orden_Pedido (Solicitante_Id, Nombre_Orden, Fecha_Creacion, Tipo_Compra, Presupuesto, Subprog, Centro_Costos, Plazo_maximo, Iva, Valor_neto, Valor_total, Estado, Motivo_Compra, Cuenta_Presupuestaria) VALUES (?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql_orden = "INSERT INTO Orden_Pedido (Solicitante_Id, Nombre_Orden, Fecha_Creacion, Tipo_Compra, Id_Licitacion, Presupuesto, Subprog, Centro_Costos, Plazo_maximo, Iva, Valor_neto, Valor_total, Estado, Motivo_Compra, Cuenta_Presupuestaria) VALUES (?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt_orden = $conn->prepare($sql_orden);
-        $stmt_orden->bind_param("issssssdddsss", $solicitante_id, $nombre_orden, $tipo_compra, $presupuesto, $subprog, $centro_costos, $plazo_maximo, $iva, $valor_neto, $valor_total, $estado, $motivo_compra, $cuenta_presupuestaria);
+        $stmt_orden->bind_param("isssssssdddsss", $solicitante_id, $nombre_orden, $tipo_compra, $id_licitacion, $presupuesto, $subprog, $centro_costos, $plazo_maximo, $iva, $valor_neto, $valor_total, $estado, $motivo_compra, $cuenta_presupuestaria);
         $stmt_orden->execute();
         $orden_id_nueva = $conn->insert_id; // ID generado
 

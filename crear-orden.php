@@ -18,6 +18,8 @@ $depto_usuario = htmlspecialchars($usuario['NombreDepartamento']);
 $email_usuario = htmlspecialchars($usuario['Email']);
 $fono_usuario = htmlspecialchars($usuario['Telefono']);
 $user_rol = $_SESSION['user_rol'];
+$sql_licitaciones = "SELECT Id, Nombre_Orden FROM Orden_Pedido WHERE Tipo_Compra = 'Licitación Pública' ORDER BY Id DESC";
+$res_licitaciones = $conn->query($sql_licitaciones);
 $stmt_user->close();
 ?>
 <!DOCTYPE html>
@@ -56,32 +58,33 @@ $stmt_user->close();
                     </fieldset>
 
                     <fieldset>
-                        <legend>2. Datos Generales de la Orden</legend>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="nombre-orden">Nombre de la Compra <span style="color: red;">*</span></label>
-                                <input type="text" id="nombre-orden" name="nombre_orden" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="plazo-max">Plazo Máximo de Entrega <span style="color: red;">*</span></label>
-                                <input type="date" id="plazo-max" name="plazo_maximo" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="tipo-compra">Tipo de Compra <span style="color: red;">*</span></label>
-                                <select id="tipo-compra" name="tipo_compra" required>
-                                    <option value="">Seleccione...</option>
-                                    <option value="Convenio Marco">Convenio Marco</option> 
-                                    <option value="Compra Ágil">Compra Ágil</option>
-                                    <option value="Trato Directo">Trato Directo</option>
-                                    <option value="Licitación Pública">Licitación Pública</option>
-                                    <option value="Licitación Privada">Licitación Privada</option>
-                                    <option value="Suministro">Suministro</option>
-                                </select>
+
+                    <legend>2. Datos Generales de la Orden</legend>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="nombre-orden">Nombre de la Compra <span style="color: red;">*</span></label>
+                            <input type="text" id="nombre-orden" name="nombre_orden" maxlength="100" required placeholder="Ej: Servicio de mantención...">
+                        </div>
+                        <div class="form-group">
+                            <label for="plazo-max">Plazo Máximo de Entrega <span style="color: red;">*</span></label>
+                            <input type="date" id="plazo-max" name="plazo_maximo" min="<?php echo date('Y-m-d'); ?>" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="tipo-compra">Tipo de Compra <span style="color: red;">*</span></label>
+                            <select id="tipo-compra" name="tipo_compra" required>
+                                <option value="">Seleccione...</option>
+                                <option value="Convenio Marco">Convenio Marco</option> 
+                                <option value="Compra Ágil">Compra Ágil</option>
+                                <option value="Trato Directo">Trato Directo</option>
+                                <option value="Licitación Pública">Licitación Pública</option>
+                                <option value="Licitación Privada">Licitación Privada</option>
+                                <option value="Suministro">Suministro</option>
+                            </select>
                             </div>
                         </div>
                         <div class="form-group full-width">
                             <label for="motivo-compra">Motivo de la Compra <span style="color: red;">*</span></label>
-                            <textarea id="motivo-compra" name="motivo_compra" required></textarea>
+                            <textarea id="motivo-compra" name="motivo_compra" required placeholder="Describa brevemente la necesidad..."></textarea>
                         </div>
                     </fieldset>
 
@@ -90,11 +93,11 @@ $stmt_user->close();
                         <div class="form-grid">
                             <div class="form-group">
                                 <label for="presupuesto">Presupuesto <span style="color: red;">*</span></label>
-                                <input type="text" id="presupuesto" name="presupuesto" required>
+                                <input type="number" id="presupuesto" name="presupuesto" min="1" step="1" onkeydown="if(['e', 'E', '.', '-', '+'].includes(event.key)) event.preventDefault();" placeholder="" required>
                             </div>
                             <div class="form-group">
                                 <label for="cuenta_presupuestaria">Cuenta Presupuestaria <span style="color: red;">*</span></label>
-                                <input type="text" id="cuenta_presupuestaria" name="cuenta_presupuestaria">
+                                <input type="text" id="cuenta_presupuestaria" name="cuenta_presupuestaria" maxlength="20" inputmode="numeric" placeholder="">
                             </div>
                             <div class="form-group">
                                 <label for="subprog">Subprograma <span style="color: red;">*</span></label>
@@ -109,8 +112,8 @@ $stmt_user->close();
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="cc">Centro de Costo</label>
-                                <input type="text" id="cc" name="centro_costos" placeholder="000000">
+                                <label for="cc">Centro de Costo (6 dígitos)</label>
+                                <input type="text" id="cc" name="centro_costos" maxlength="6" placeholder="000000" pattern="\d{6}" title="Debe ingresar exactamente 6 números" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                             </div>
                         </div>
                     </fieldset>
@@ -122,7 +125,27 @@ $stmt_user->close();
                                 <label for="id_licitacion_publica">ID Licitacion Publica <span style="color: red;">*</span></label>
                                 <select id="id_licitacion_publica" name="id_licitacion_publica">
                                     <option value="">Seleccione...</option>
-                                    <option value="ID-001">ID-001</option>
+                                    <?php
+                                        // Verificamos si hay resultados
+                                        if ($res_licitaciones && $res_licitaciones->num_rows > 0) {
+                                            // Recorremos cada fila encontrada
+                                            while($row = $res_licitaciones->fetch_assoc()) {
+                                                
+                                                // Preparamos el ID y el Nombre
+                                                $id = $row['Id'];
+                                                $nombre = htmlspecialchars($row['Nombre_Orden']); // htmlspecialchars evita errores con tildes/comillas
+                                                
+                                                // Creamos el formato solicitado: "id: 1 - Nombre"
+                                                $texto_opcion = "id: $id - $nombre";
+                                                
+                                                // Imprimimos la opción
+                                                // El 'value' será el ID para guardarlo en la BD, pero el usuario verá el texto formateado
+                                                echo "<option value='$id'>$texto_opcion</option>";
+                                            }
+                                        } else {
+                                            echo "<option value='' disabled>No hay licitaciones disponibles</option>";
+                                        }
+                                        ?>
                                 </select>
                             </div>
                         </div>
@@ -134,22 +157,21 @@ $stmt_user->close();
 
                             <div class="form-group">
                                 <label>1° Cotización (Máx 3) <span style="color: red;">*</span></label>
-                                <input type="file" id="cotizacion_file" name="cotizacion_file[]" multiple>
+                                <input type="file" id="cotizacion_file" name="cotizacion_file[]" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
                                 <div id="lista-cotizacion" class="file-list"></div>
                             </div>
 
                             <div class="form-group">
                                 <label>2° Memorando (Máx 3) <span style="color: red;">*</span></label>
-                                <input type="file" id="memorando_file" name="memorando_file[]" multiple>
+                                <input type="file" id="memorando_file" name="memorando_file[]" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
                                 <div id="lista-memorando" class="file-list"></div>
                             </div>
 
                             <div class="form-group">
                                 <label>3° Decreto (Máx 3) <span style="color: red;">*</span></label>
-                                <input type="file" id="decreto_file" name="decreto_file[]" multiple>
+                                <input type="file" id="decreto_file" name="decreto_file[]" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
                                 <div id="lista-decreto" class="file-list"></div>
                             </div>
-
 
                         </div>
                     </fieldset>
@@ -172,14 +194,27 @@ $stmt_user->close();
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td><input type="number" name="item_cantidad[]" class="input-calc" value="1" min="1" required></td>
+                                    <td>
+                                        <input type="number" name="item_cantidad[]" class="input-calc" value="1" min="1" max="999999" 
+                                            oninput="if(this.value.length > 6) this.value = this.value.slice(0, 6);" 
+                                            onkeydown="if(['e', 'E', '.', '-', '+'].includes(event.key)) event.preventDefault();"
+                                            required>
+                                    </td>
                                     
                                     <td class="col-id-producto">
-                                        <input type="text" name="item_codigo[]" placeholder="ID CM">
+                                        <input type="text" name="item_codigo[]" placeholder="ID CM" maxlength="30">
                                     </td>
 
-                                    <td><input type="text" name="item_nombre[]" required></td>
-                                    <td class="col-v-unitario"><input type="number" name="item_v_unitario[]" class="input-v-unitario input-calc" value="0" min="0" required></td>
+                                    <td>
+                                        <input type="text" name="item_nombre[]" placeholder="Descripción del producto" maxlength="100" required>
+                                    </td>
+
+                                    <td class="col-v-unitario">
+                                        <input type="number" name="item_v_unitario[]" class="input-v-unitario input-calc" value="0" min="0" max="9999999999" step="1" 
+                                            onkeydown="if(['e', 'E', '.', '-', '+'].includes(event.key)) event.preventDefault();"
+                                            required>
+                                    </td>
+
                                     <td class="col-total-linea"><span class="total-linea">0</span></td>
                                     <td><button type="button" class="accion-btn btn-delete-item">🗑️</button></td>
                                 </tr>
@@ -193,7 +228,7 @@ $stmt_user->close();
                         <legend>4.5. Archivos Adicionales (Opcional)</legend>
                         <div class="form-group full-width">
                             <label>Adjuntar otros documentos (Máx 3)</label>
-                            <input type="file" id="archivos_adicionales" name="archivos_adicionales[]" multiple>
+                            <input type="file" id="archivos_adicionales" name="archivos_adicionales[]" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx">
                             
                             <div id="lista-adicionales" class="file-list"></div>
                         </div>

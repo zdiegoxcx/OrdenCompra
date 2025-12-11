@@ -1,0 +1,7 @@
+# Ignorar carpeta de subidas (pero mantener la carpeta vacía si existe .gitkeep)
+/uploads/*
+!/uploads/.gitkeep
+
+# Ignorar archivos del sistema
+.DS_Store
+Thumbs.db

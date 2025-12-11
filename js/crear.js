@@ -239,30 +239,45 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- AGREGAR FILA ---
+    /// --- AGREGAR FILA ---
+
     function agregarFila() {
         const nuevaFila = document.createElement('tr');
         
-        // Creamos la fila incluyendo la celda nueva de ID Producto
+        // COHERENCIA: Usamos las mismas restricciones estrictas (sin signos matemáticos)
         nuevaFila.innerHTML = `
-            <td><input type="number" name="item_cantidad[]" class="input-calc" value="1" min="1" required></td>
+            <td>
+                <input type="number" name="item_cantidad[]" class="input-calc" value="1" min="1" max="999999" 
+                    oninput="if(this.value.length > 6) this.value = this.value.slice(0, 6);" 
+                    onkeydown="if(['e', 'E', '.', '-', '+'].includes(event.key)) event.preventDefault();"
+                    required>
+            </td>
             
             <td class="col-id-producto">
-                <input type="text" name="item_codigo[]" placeholder="ID CM">
+                <input type="text" name="item_codigo[]" placeholder="ID CM" maxlength="30">
             </td>
 
-            <td><input type="text" name="item_nombre[]" required></td>
-            <td class="col-v-unitario"><input type="number" name="item_v_unitario[]" class="input-v-unitario input-calc" value="0" min="0" required></td>
+            <td>
+                <input type="text" name="item_nombre[]" placeholder="Descripción del producto" maxlength="100" required>
+            </td>
+
+            <td class="col-v-unitario">
+                <input type="number" name="item_v_unitario[]" class="input-v-unitario input-calc" value="0" min="0" max="9999999999" step="1" 
+                    onkeydown="if(['e', 'E', '.', '-', '+'].includes(event.key)) event.preventDefault();"
+                    required>
+            </td>
+
             <td class="col-total-linea"><span class="total-linea">0</span></td>
             <td><button type="button" class="accion-btn btn-delete-item">🗑️</button></td>
         `;
         
         tablaItemsBody.appendChild(nuevaFila);
 
-        // **IMPORTANTE**: Al agregar fila, debemos re-ejecutar la lógica 
-        // para saber si ocultar o mostrar las columnas nuevas según lo seleccionado
+        // Importante: Volver a ejecutar la lógica de ocultar/mostrar columnas
         manejarTipoCompra();
     }
+
+
 
     // --- LISTENERS ---
     btnAgregarItem.addEventListener('click', agregarFila);

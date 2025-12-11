@@ -26,10 +26,12 @@ $sql_orden = "
         u.Email AS Email_Solicitante,
         u.Telefono AS Fono_Solicitante,
         u.Departamento_Id AS Solicitante_Depto_Id,
-        d.Nombre AS Nombre_Departamento
+        d.Nombre AS Nombre_Departamento,
+        lic.Nombre_Orden AS Nombre_Licitacion_Origen  /* <-- 1. Traemos el nombre de la licitación */
     FROM Orden_Pedido op
     LEFT JOIN Usuario u ON op.Solicitante_Id = u.Id
     LEFT JOIN Departamento d ON u.Departamento_Id = d.Id
+    LEFT JOIN Orden_Pedido lic ON op.Id_Licitacion = lic.Id /* <-- 2. Conectamos con la tabla de ordenes misma */
     WHERE op.Id = ?
 ";
 
@@ -240,20 +242,31 @@ if ($user_rol_actual === 'EncargadoAdquision' && $orden['Estado'] === 'Aprobado'
                     </div>
                 </fieldset>
 
-                <?php if ($isLicitacion): ?>
                 <fieldset id="fieldset-licitacion-publica">
                     <legend>3.6. ID de Licitación</legend>
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>ID Licitacion Publica</label>
-                            <input type="text" value="<?php echo htmlspecialchars(isset($orden['Id_Licitacion']) ? $orden['Id_Licitacion'] : 'N/A'); ?>" disabled>
+                            <label>Licitación Asociada</label>
+                            <?php 
+                                // Preparamos el valor a mostrar
+                                $valor_mostrar = 'N/A';
+                                
+                                if (!empty($orden['Id_Licitacion'])) {
+                                    $id_lic = $orden['Id_Licitacion'];
+                                    // Si encontramos el nombre en la consulta, lo usamos. Si no, ponemos "Desconocido"
+                                    $nom_lic = !empty($orden['Nombre_Licitacion_Origen']) ? $orden['Nombre_Licitacion_Origen'] : '(Nombre no encontrado)';
+                                    
+                                    // FORMATO FINAL: "id: 3 - Nombre de la orden"
+                                    $valor_mostrar = "id: $id_lic - $nom_lic";
+                                }
+                            ?>
+                            <input type="text" value="<?php echo htmlspecialchars($valor_mostrar); ?>" disabled>
                         </div>
                     </div>
                 </fieldset>
-                <?php endif; ?>
 
                 <fieldset>
-                    <legend>Documentos Adjuntos</legend>
+                    <legend>3.5 Documentos Adjuntos</legend>
                     <div class="form-group full-width">
                     <?php 
                     if (count($archivos) > 0) {
