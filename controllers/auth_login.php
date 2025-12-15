@@ -1,9 +1,12 @@
 <?php
+// controllers/auth_login.php
+
 // 1. Iniciar la sesión (SIEMPRE al principio)
 session_start();
 
 // 2. Incluir la conexión
-include 'conectar.php';
+// CAMBIO: Salimos de 'controllers' (../) y entramos a 'config'
+include '../config/db.php';
 
 // 3. Verificar que los datos vengan por POST
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -37,19 +40,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['user_depto_id'] = $usuario['Departamento_Id'];
 
             // 9. Redirigir al panel principal (index.php)
-            header("Location: index.php");
+            // CAMBIO: Salimos de 'controllers' para ir al index en la raíz
+            header("Location: ../index.php");
             exit;
 
         }
     }
 
     // 10. Si algo falla (usuario no existe o pass incorrecta), redirigir de vuelta
-    header("Location: login.php?error=1");
+    // CAMBIO: Salimos de 'controllers' para ir a login en la raíz
+    header("Location: ../login.php?error=1");
     exit;
 
 } else {
     // Si alguien intenta acceder a este archivo directamente
-    header("Location: login.php");
+    // CAMBIO: Salimos de 'controllers' para ir a login en la raíz
+    header("Location: ../login.php");
     exit;
 }
 ?>

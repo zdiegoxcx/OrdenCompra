@@ -1,15 +1,17 @@
 <?php
-// 1. Iniciar la sesión (SIEMPRE al principio)
+// ver_orden.php (En la raíz del proyecto)
+
+// 1. Iniciar la sesión
 session_start();
 
-// 2. ¡Guardia de Seguridad!
+// 2. Seguridad
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit;
 }
 
-// 3. Incluir conexión
-include 'conectar.php';
+// 3. Conexión a BD (Desde raíz a config)
+include 'config/db.php';
 
 // 4. Obtener y validar el ID de la URL
 $orden_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -27,11 +29,11 @@ $sql_orden = "
         u.Telefono AS Fono_Solicitante,
         u.Departamento_Id AS Solicitante_Depto_Id,
         d.Nombre AS Nombre_Departamento,
-        lic.Nombre_Orden AS Nombre_Licitacion_Origen  /* <-- 1. Traemos el nombre de la licitación */
+        lic.Nombre_Orden AS Nombre_Licitacion_Origen
     FROM Orden_Pedido op
     LEFT JOIN Usuario u ON op.Solicitante_Id = u.Id
     LEFT JOIN Departamento d ON u.Departamento_Id = d.Id
-    LEFT JOIN Orden_Pedido lic ON op.Id_Licitacion = lic.Id /* <-- 2. Conectamos con la tabla de ordenes misma */
+    LEFT JOIN Orden_Pedido lic ON op.Id_Licitacion = lic.Id
     WHERE op.Id = ?
 ";
 
@@ -45,15 +47,14 @@ if ($resultado_orden->num_rows === 0) {
 }
 $orden = $resultado_orden->fetch_assoc();
 
-// 6. Consulta de los Ítems (Incluyendo la nueva columna Codigo_Producto)
+// 6. Consulta de los Ítems
 $sql_items = "SELECT * FROM Orden_Item WHERE Orden_Id = ?";
 $stmt_items = $conn->prepare($sql_items);
 $stmt_items->bind_param("i", $orden_id);
 $stmt_items->execute();
 $resultado_items = $stmt_items->get_result();
 
-// 7. --- NUEVA CONSULTA: ARCHIVOS ADJUNTOS ---
-// Traemos todos los archivos asociados a esta orden desde la nueva tabla
+// 7. Consulta Archivos Adjuntos
 $sql_archivos = "SELECT * FROM Orden_Archivos WHERE Orden_Id = ?";
 $stmt_files = $conn->prepare($sql_archivos);
 $stmt_files->bind_param("i", $orden_id);
@@ -65,7 +66,7 @@ while($f = $res_files->fetch_assoc()) {
     $archivos[] = $f;
 }
 
-// 8. --- LÓGICA DE VISUALIZACIÓN DE FIRMA ---
+// 8. LÓGICA DE VISUALIZACIÓN DE FIRMA
 $user_id_actual = $_SESSION['user_id'];
 $user_rol_actual = $_SESSION['user_rol'];
 $user_depto_id_actual = $_SESSION['user_depto_id'];
@@ -84,13 +85,12 @@ elseif ($orden_estado === 'Pend. Firma Alcalde' && $user_rol_actual === 'Alcalde
     $mostrar_firma_box = true;
 }
 
-// 9. --- LÓGICA DE VISUALIZACIÓN DE TIPO DE COMPRA ---
+// 9. LÓGICA DE VISUALIZACIÓN DE TIPO DE COMPRA
 $tipo_compra = $orden['Tipo_Compra'];
 $isModoPresupuesto = false;
 $isLicitacion = false;
-$isConvenioMarco = false; // Nueva bandera
+$isConvenioMarco = false;
 
-// Clasificación de tipos
 switch ($tipo_compra) {
     case 'Compra Ágil':
     case 'Licitación Pública':
@@ -98,7 +98,7 @@ switch ($tipo_compra) {
         $isModoPresupuesto = true;
         break;
     case 'Convenio Marco':
-        $isConvenioMarco = true; // Activamos la bandera
+        $isConvenioMarco = true;
         break;
 }
 
@@ -106,12 +106,10 @@ if ($tipo_compra === 'Licitación Pública' || $tipo_compra === 'Suministro') {
     $isLicitacion = true;
 }
 
-
 $mostrar_gestion_box = false;
 if ($user_rol_actual === 'EncargadoAdquision' && $orden['Estado'] === 'Aprobado') {
     $mostrar_gestion_box = true;
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -119,9 +117,8 @@ if ($user_rol_actual === 'EncargadoAdquision' && $orden['Estado'] === 'Aprobado'
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ver Orden N° <?php echo $orden['Id']; ?></title>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="assets/css/styles.css">
     <style>
-        /* Pequeño ajuste para que los enlaces de archivo se vean como botones o links limpios */
         .file-link {
             display: inline-block;
             margin-right: 10px;
@@ -152,15 +149,13 @@ if ($user_rol_actual === 'EncargadoAdquision' && $orden['Estado'] === 'Aprobado'
         </div>
     </div>
 
-
     <div class="app-container">
-        
         <header class="app-header">
             <h1>Plataforma de Adquisiciones</h1>
             <span>
                 Usuario: <strong><?php echo htmlspecialchars($_SESSION['user_nombre']); ?></strong> (<?php echo htmlspecialchars($_SESSION['user_rol']); ?>)
                 &nbsp; | &nbsp;
-                <a href="logout.php" style="color: white; text-decoration: underline;">Cerrar Sesión</a>
+                <a href="controllers/auth_logout.php" style="color: white; text-decoration: underline;">Cerrar Sesión</a>
             </span>
         </header>
 
@@ -248,15 +243,10 @@ if ($user_rol_actual === 'EncargadoAdquision' && $orden['Estado'] === 'Aprobado'
                         <div class="form-group">
                             <label>Licitación Asociada</label>
                             <?php 
-                                // Preparamos el valor a mostrar
                                 $valor_mostrar = 'N/A';
-                                
                                 if (!empty($orden['Id_Licitacion'])) {
                                     $id_lic = $orden['Id_Licitacion'];
-                                    // Si encontramos el nombre en la consulta, lo usamos. Si no, ponemos "Desconocido"
                                     $nom_lic = !empty($orden['Nombre_Licitacion_Origen']) ? $orden['Nombre_Licitacion_Origen'] : '(Nombre no encontrado)';
-                                    
-                                    // FORMATO FINAL: "id: 3 - Nombre de la orden"
                                     $valor_mostrar = "id: $id_lic - $nom_lic";
                                 }
                             ?>
@@ -270,12 +260,12 @@ if ($user_rol_actual === 'EncargadoAdquision' && $orden['Estado'] === 'Aprobado'
                     <div class="form-group full-width">
                     <?php 
                     if (count($archivos) > 0) {
-                        // Iteramos sobre todos los archivos encontrados en la BD
                         foreach($archivos as $arch) {
                             $nombre_mostrar = htmlspecialchars($arch['Nombre_Original']);
                             $tipo_doc = htmlspecialchars($arch['Tipo_Documento']);
                             $ruta = htmlspecialchars($arch['Ruta_Archivo']);
                             
+                            // Nota: La ruta guardada en BD es relativa ("uploads/archivo.pdf"), funciona bien desde la raíz.
                             echo "<div style='margin-bottom: 10px;'>";
                             echo "<strong>$tipo_doc:</strong> ";
                             echo "<a href='$ruta' target='_blank' class='file-link'>📄 $nombre_mostrar</a>";
@@ -288,20 +278,16 @@ if ($user_rol_actual === 'EncargadoAdquision' && $orden['Estado'] === 'Aprobado'
                     </div>
                 </fieldset>
 
-
                 <fieldset>
                     <legend>4. Detalle de Productos/Servicios</legend>
                     <table id="items-table-view"> 
                         <thead>
                             <tr>
                                 <th style="width: 10%;">Cantidad</th>
-                                
                                 <?php if ($isConvenioMarco): ?>
                                     <th style="background-color: #e3f2fd;">ID Producto</th>
                                 <?php endif; ?>
-
                                 <th>Producto o Servicio</th>
-                                
                                 <?php if (!$isModoPresupuesto): ?>
                                     <th class="col-v-unitario" style="width: 20%;">V. Unitario ($)</th>
                                     <th class="col-total-linea" style="width: 20%;">Total Línea ($)</th>
@@ -315,9 +301,7 @@ if ($user_rol_actual === 'EncargadoAdquision' && $orden['Estado'] === 'Aprobado'
                                     echo "<tr>";
                                     echo "<td>" . htmlspecialchars($item['Cantidad']) . "</td>";
                                     
-                                    // NUEVA CELDA (Solo si es Convenio Marco)
                                     if ($isConvenioMarco) {
-                                        // Usamos un ternario por si el campo está vacío en BD
                                         $codigo = !empty($item['Codigo_Producto']) ? $item['Codigo_Producto'] : '-';
                                         echo "<td style='background-color: #f1f8ff;'>" . htmlspecialchars($codigo) . "</td>";
                                     }
@@ -332,11 +316,9 @@ if ($user_rol_actual === 'EncargadoAdquision' && $orden['Estado'] === 'Aprobado'
                                     echo "</tr>";
                                 }
                             } else {
-                                // Ajustamos el colspan dependiendo de las columnas visibles
                                 $colspan = 4;
                                 if ($isConvenioMarco) $colspan++;
                                 if ($isModoPresupuesto) $colspan -= 2;
-                                
                                 echo "<tr><td colspan='$colspan'>No se encontraron ítems para esta orden.</td></tr>";
                             }
                             ?>
@@ -351,20 +333,15 @@ if ($user_rol_actual === 'EncargadoAdquision' && $orden['Estado'] === 'Aprobado'
                         <?php if ($isModoPresupuesto): ?>
                             <label>Presupuesto:</label>
                             <input type="text" value="$ <?php echo number_format($orden['Valor_total'], 0, ',', '.'); ?>" disabled>
-                            
                             <label>IVA:</label>
                             <input type="text" value="N/A" disabled>
-
                             <label>Total (Presupuesto):</label>
                             <input type="text" value="$ <?php echo number_format($orden['Valor_total'], 0, ',', '.'); ?>" disabled style="font-weight: bold; font-size: 1.1em;">
-
                         <?php else: ?>
                             <label>Valor Neto:</label>
                             <input type="text" value="$ <?php echo number_format($orden['Valor_neto'], 0, ',', '.'); ?>" disabled>
-                            
                             <label>IVA (19%):</label>
                             <input type="text" value="$ <?php echo number_format($orden['Iva'], 0, ',', '.'); ?>" disabled>
-
                             <label>Valor Total:</label>
                             <input type="text" value="$ <?php echo number_format($orden['Valor_total'], 0, ',', '.'); ?>" disabled style="font-weight: bold; font-size: 1.1em;">
                         <?php endif; ?>
@@ -372,10 +349,9 @@ if ($user_rol_actual === 'EncargadoAdquision' && $orden['Estado'] === 'Aprobado'
                     </div>
                 </fieldset>
                 
-                
                 <?php if ($mostrar_gestion_box): ?>
                 <div id="gestion-view" style="margin-top: 20px; border-top: 2px solid #004a99; padding-top: 20px;">
-                    <form action="procesar_gestion.php" method="POST">
+                    <form action="controllers/orden_gestion.php" method="POST">
                         <fieldset>
                             <legend>Gestionar Compra (Encargado)</legend>
                             <input type="hidden" name="orden_id" value="<?php echo $orden['Id']; ?>">
@@ -396,7 +372,6 @@ if ($user_rol_actual === 'EncargadoAdquision' && $orden['Estado'] === 'Aprobado'
                     </form>
                 </div>
                 <?php endif; ?>
-
 
                 <?php if ($mostrar_firma_box): ?>
                 <div id="firma-view">
@@ -435,8 +410,6 @@ if ($user_rol_actual === 'EncargadoAdquision' && $orden['Estado'] === 'Aprobado'
                         <a href="generar_pdf.php?id=<?php echo $orden['Id']; ?>" target="_blank" class="btn btn-primary" style="background-color: #dc3545; border-color: #dc3545;">
                             Descargar PDF
                         </a>
-
-
                         <a href="index.php" class="btn btn-secondary">Volver</a>
                     </div>
                 <?php endif; ?>
@@ -445,13 +418,12 @@ if ($user_rol_actual === 'EncargadoAdquision' && $orden['Estado'] === 'Aprobado'
         </main>
     </div>
     
-    <script src="js/firma-logic.js"></script>
+    <script src="assets/js/firma-logic.js"></script>
 
     <?php
-    // 10. Cerrar conexiones
     $stmt_orden->close();
     $stmt_items->close(); 
-    $stmt_files->close(); // Cerramos el stmt de archivos también
+    $stmt_files->close();
     $conn->close();
     ?>
 </body>

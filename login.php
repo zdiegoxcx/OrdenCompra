@@ -1,4 +1,6 @@
 <?php
+// login.php (Ubicación: Raíz del proyecto)
+
 // Iniciar la sesión para poder manejar mensajes de error
 session_start();
 
@@ -8,7 +10,7 @@ if (isset($_SESSION['user_id'])) {
     exit;
 }
 
-// Revisar si hay un mensaje de error desde el procesador
+// Revisar si hay un mensaje de error desde el controlador
 $error_msg = '';
 if (isset($_GET['error'])) {
     $error_msg = "Email o contraseña incorrectos.";
@@ -20,9 +22,9 @@ if (isset($_GET['error'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inicio de Sesión</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="assets/css/styles.css">
     <style>
-        /* Estilos simples para el login */
+        /* Estilos simples específicos para el login */
         body { background-color: #f0f2f5; }
         .login-container {
             width: 100%;
@@ -65,7 +67,7 @@ if (isset($_GET['error'])) {
             <div class="error-msg"><?php echo $error_msg; ?></div>
         <?php endif; ?>
 
-        <form action="procesar_login.php" method="POST">
+        <form action="controllers/auth_login.php" method="POST">
             <div class="form-group">
                 <label for="email">Email</label>
                 <input type="email" id="email" name="email" required>

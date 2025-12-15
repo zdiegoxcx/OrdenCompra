@@ -1,17 +1,20 @@
 <?php
-// generar_pdf.php
-session_start();
+// generar_pdf.php (En la raíz del proyecto)
 
 // 1. Seguridad
+session_start();
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit;
 }
 
 // 2. Incluir FPDF y Conexión
-// Asegúrate de que la carpeta 'fpdf' esté en el mismo lugar que este archivo
-require('fpdf/fpdf.php');
-include 'conectar.php';
+// CAMBIO: FPDF ahora está en libs/fpdf/
+// Nota: Asegúrate de haber movido la carpeta 'fpdf' (con fpdf.php y la carpeta font) dentro de 'libs'
+require('libs/fpdf/fpdf.php'); 
+
+// CAMBIO: Conexión ahora está en config/
+include 'config/db.php';
 
 // 3. Obtener ID
 $orden_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -48,8 +51,8 @@ $res_items = $stmt_items->get_result();
 class PDF extends FPDF {
     // Cabecera de página
     function Header() {
-        // Logo (Asegúrate de tener un logo o comenta esta línea)
-        // $this->Image('logo.png',10,6,30); 
+        // Logo (Asegúrate de tener un logo en assets/img/logo.png si lo usas)
+        // $this->Image('assets/img/logo.png',10,6,30); 
         
         $this->SetFont('Arial','B',15);
         $this->Cell(80); // Mover a la derecha
@@ -105,7 +108,7 @@ $pdf->Cell(40, 16, utf8_decode('Motivo:'), 1); // Altura doble
 $x = $pdf->GetX();
 $y = $pdf->GetY();
 $pdf->MultiCell(150, 8, utf8_decode($orden['Motivo_Compra']), 1);
-$pdf->SetXY($x + 150, $y); // Volver posición si hubiera algo al lado (aquí no es necesario pero es buena práctica)
+$pdf->SetXY($x + 150, $y); // Volver posición si hubiera algo al lado
 $pdf->Ln(16); // Bajar la altura doble
 
 $pdf->Ln(5);
@@ -119,7 +122,6 @@ $pdf->Cell(40, 8, 'Total', 1, 1, 'C', true);
 
 $pdf->SetFont('Arial','',10);
 
-$total_items = 0;
 while($row = $res_items->fetch_assoc()) {
     $nombre_prod = utf8_decode($row['Nombre_producto_servicio']);
     $cant = $row['Cantidad'];
@@ -127,7 +129,7 @@ while($row = $res_items->fetch_assoc()) {
     $total = number_format($row['Valor_Total'], 0, ',', '.');
 
     $pdf->Cell(15, 8, $cant, 1, 0, 'C');
-    $pdf->Cell(100, 8, substr($nombre_prod, 0, 55), 1); // Cortamos texto para que no rompa la tabla simple
+    $pdf->Cell(100, 8, substr($nombre_prod, 0, 55), 1); // Cortamos texto para que no rompa la tabla
     $pdf->Cell(35, 8, '$ '.$unit, 1, 0, 'R');
     $pdf->Cell(40, 8, '$ '.$total, 1, 1, 'R');
 }
@@ -154,5 +156,5 @@ if ($orden['Estado'] == 'Aprobado') {
     $pdf->Cell(0, 10, utf8_decode('DOCUMENTO APROBADO DIGITALMENTE'), 0, 1, 'R');
 }
 
-$pdf->Output('I', 'Orden_'.$orden_id.'.pdf'); // 'I' para mostrar en navegador, 'D' para forzar descarga
+$pdf->Output('I', 'Orden_'.$orden_id.'.pdf'); // 'I' para mostrar en navegador
 ?>

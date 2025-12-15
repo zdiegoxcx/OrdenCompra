@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Función Asíncrona para enviar datos al Backend ---
     async function procesarAccion(data) {
         try {
-            const response = await fetch('procesar_firma.php', {
+            const response = await fetch('controllers/orden_firma.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

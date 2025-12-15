@@ -1,5 +1,8 @@
 <?php
-session_start(); // 1. Unirse a la sesión existente
+// controllers/auth_logout.php
+
+// 1. Unirse a la sesión existente
+session_start(); 
 
 // 2. Limpiar todas las variables de sesión
 $_SESSION = array();
@@ -8,6 +11,6 @@ $_SESSION = array();
 session_destroy();
 
 // 4. Redirigir al formulario de login
-header("Location: login.php");
+header("Location: ../login.php");
 exit;
 ?>

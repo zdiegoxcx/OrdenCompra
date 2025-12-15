@@ -1,15 +1,21 @@
 <?php
+// ARCHIVO: index.php (Ubicación: Raíz del proyecto)
+
 // 1. Iniciar la sesión
 session_start();
 
+// Control de Acceso: Si no hay sesión, al login
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit;
 }
 
-include 'conectar.php';
+// 2. Conexión a Base de Datos
+// Buscamos la carpeta config/ desde la raíz
+include 'config/db.php';
 
-// Actualizar estados expirados
+// 3. Lógica Automática: Actualizar estados expirados
+// Antes de mostrar la tabla, verificamos si hay órdenes "En Espera" que ya vencieron
 $conn->query("
     UPDATE Orden_Pedido op
     INNER JOIN (
@@ -22,12 +28,13 @@ $conn->query("
     AND gc.Ultima_Gestion < DATE_SUB(NOW(), INTERVAL 10 MINUTE)
 ");
 
+// Datos del usuario actual para personalizar la vista
 $user_id = $_SESSION['user_id'];
 $user_nombre = $_SESSION['user_nombre'];
 $user_rol = $_SESSION['user_rol'];
 $user_depto_id = $_SESSION['user_depto_id'];
 
-// --- CONFIGURACIÓN DE FILTROS ---
+// --- CONFIGURACIÓN DE FILTROS (Recibidos por GET) ---
 $busqueda = isset($_GET['busqueda']) ? trim($_GET['busqueda']) : '';
 $filtro_estado = isset($_GET['filtro_estado']) ? $_GET['filtro_estado'] : '';
 $filtro_tipo = isset($_GET['filtro_tipo']) ? $_GET['filtro_tipo'] : '';
@@ -40,35 +47,40 @@ $pagina_actual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 if ($pagina_actual < 1) $pagina_actual = 1;
 $offset = ($pagina_actual - 1) * $registros_por_pagina;
 
-// --- CONSTRUCCIÓN DINÁMICA DE LA CONSULTA ---
+// --- CONSTRUCCIÓN DINÁMICA DE LA CONSULTA SQL ---
 $sql_joins = ""; 
 $sql_where = "";
 $params = [];
 $types = "";
 
-// 1. Lógica Base por Rol
+// A. Filtro Base por Rol (Seguridad de Datos)
+// Define qué órdenes tiene permiso de ver cada usuario
 if ($user_rol === 'Director') {
+    // Director: Ve lo de su departamento pendiente de firma O sus propias solicitudes
     $sql_joins = " JOIN Usuario u ON op.Solicitante_Id = u.Id";
     $sql_where = " WHERE ((u.Departamento_Id = ? AND op.Estado = 'Pend. Firma Director') OR (op.Solicitante_Id = ?))";
     $params = [$user_depto_id, $user_id];
     $types = "ii";
 } else if ($user_rol === 'Alcalde') {
+    // Alcalde: Ve lo pendiente de firma final O sus propias solicitudes
     $sql_where = " WHERE (op.Estado = 'Pend. Firma Alcalde' OR op.Solicitante_Id = ?)";
     $params = [$user_id];
     $types = "i";
 } else if ($user_rol === 'EncargadoAdquision') {
+    // Encargado: Ve lo Aprobado/En Espera (para gestionar) O sus propias solicitudes
     $sql_where = " WHERE (op.Solicitante_Id = ? OR op.Estado IN ('Aprobado', 'En Espera', 'Sin respuesta del vendedor'))";
     $params = [$user_id];
     $types = "i";
 } else {
+    // Usuario normal: Solo ve sus propias solicitudes
     $sql_where = " WHERE (op.Solicitante_Id = ?)";
     $params = [$user_id];
     $types = "i";
 }
 
-// 2. Aplicar Filtros Adicionales
+// B. Aplicar Filtros de Búsqueda (Se suman con AND a la condición base)
 
-// A. Búsqueda Texto (ID o Nombre)
+// B1. Búsqueda por Texto (ID o Nombre)
 if (!empty($busqueda)) {
     $sql_where .= " AND (op.Id LIKE ? OR op.Nombre_Orden LIKE ?)";
     $termino = "%" . $busqueda . "%";
@@ -76,35 +88,35 @@ if (!empty($busqueda)) {
     $types .= "ss";
 }
 
-// B. Filtro Estado
+// B2. Filtro por Estado Exacto
 if (!empty($filtro_estado)) {
     $sql_where .= " AND op.Estado = ?";
     array_push($params, $filtro_estado);
     $types .= "s";
 }
 
-// C. Filtro Tipo Compra
+// B3. Filtro por Tipo de Compra
 if (!empty($filtro_tipo)) {
     $sql_where .= " AND op.Tipo_Compra = ?";
     array_push($params, $filtro_tipo);
     $types .= "s";
 }
 
-// D. Filtro Fecha Inicio
+// B4. Filtro por Rango de Fechas
 if (!empty($fecha_inicio)) {
     $sql_where .= " AND DATE(op.Fecha_Creacion) >= ?";
     array_push($params, $fecha_inicio);
     $types .= "s";
 }
-
-// E. Filtro Fecha Fin
 if (!empty($fecha_fin)) {
     $sql_where .= " AND DATE(op.Fecha_Creacion) <= ?";
     array_push($params, $fecha_fin);
     $types .= "s";
 }
 
-// 3. CONSULTA 1: Contar Total (Para Paginación)
+// 4. Ejecutar Consultas
+
+// CONSULTA 1: Contar Total (Para calcular número de páginas)
 $sql_count = "SELECT COUNT(*) as total FROM Orden_Pedido op" . $sql_joins . $sql_where;
 $stmt_count = $conn->prepare($sql_count);
 if (!empty($params)) {
@@ -116,11 +128,12 @@ $stmt_count->close();
 
 $total_paginas = ceil($total_registros / $registros_por_pagina);
 
-// 4. CONSULTA 2: Obtener Datos
+// CONSULTA 2: Obtener Datos Paginados
 $sql_data = "SELECT op.Id, op.Nombre_Orden, op.Fecha_Creacion, op.Valor_total, op.Estado 
              FROM Orden_Pedido op" . $sql_joins . $sql_where . " 
              ORDER BY op.Id DESC LIMIT ? OFFSET ?";
 
+// Añadir parámetros de límite y offset a la lista de parámetros
 array_push($params, $registros_por_pagina, $offset);
 $types .= "ii";
 
@@ -129,13 +142,16 @@ $stmt->bind_param($types, ...$params);
 $stmt->execute();
 $resultado = $stmt->get_result();
 
-// Función auxiliar para mantener los filtros en la paginación
+// --- Helpers para la Vista ---
+
+// Genera la URL manteniendo los filtros actuales al cambiar de página
 function getPaginationUrl($page) {
     $queryParams = $_GET;
     $queryParams['pagina'] = $page;
     return '?' . http_build_query($queryParams);
 }
 
+// Devuelve la clase CSS para colorear el estado
 function getStatusClass($estado) {
     switch (strtolower($estado)) {
         case 'aprobado': return 'status-aprobado';
@@ -154,7 +170,7 @@ function getStatusClass($estado) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plataforma de Adquisiciones - Inicio</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body>
 
@@ -165,7 +181,7 @@ function getStatusClass($estado) {
             <span>
                 Usuario: <strong><?php echo htmlspecialchars($user_nombre); ?></strong> (<?php echo htmlspecialchars($user_rol); ?>)
                 &nbsp; | &nbsp;
-                <a href="logout.php" style="color: white; text-decoration: underline;">Cerrar Sesión</a>
+                <a href="controllers/auth_logout.php" style="color: white; text-decoration: underline;">Cerrar Sesión</a>
             </span>
         </header>
 
@@ -173,7 +189,7 @@ function getStatusClass($estado) {
             <div id="panel-view">
                 <div class="panel-header">
                     <h2>Mis Órdenes de Pedido</h2>
-                    <a href="crear-orden.php" class="btn btn-primary">Crear Nueva Orden</a>
+                    <a href="crear_orden.php" class="btn btn-primary">Crear Nueva Orden</a>
                 </div>
 
                 <div class="search-container">
@@ -244,6 +260,7 @@ function getStatusClass($estado) {
                                 $statusClass = getStatusClass($fila["Estado"]);
                                 $totalFormateado = number_format($fila["Valor_total"], 0, ',', '.');
                                 
+                                // Enlace a la vista de detalle
                                 echo "<tr class='clickable-row' onclick=\"window.location.href='ver_orden.php?id=" . $fila["Id"] . "'\">";
                                 echo "<td>" . htmlspecialchars($fila["Id"]) . "</td>";
                                 echo "<td>" . htmlspecialchars($fila["Nombre_Orden"]) . "</td>";
@@ -264,21 +281,35 @@ function getStatusClass($estado) {
 
                 <?php if ($total_paginas > 1): ?>
                 <div class="pagination">
+                    
                     <?php if ($pagina_actual > 1): ?>
                         <a href="<?php echo getPaginationUrl($pagina_actual - 1); ?>">&laquo; Anterior</a>
                     <?php endif; ?>
 
-                    <?php for ($i = 1; $i <= $total_paginas; $i++): ?>
-                        <a href="<?php echo getPaginationUrl($i); ?>" 
-                           class="<?php echo ($i == $pagina_actual) ? 'active' : ''; ?>">
-                            <?php echo $i; ?>
-                        </a>
-                    <?php endfor; ?>
+                    <?php 
+                    $rango = 2; // Número de páginas a mostrar a izquierda y derecha de la actual
+
+                    for ($i = 1; $i <= $total_paginas; $i++) {
+                        
+                        // Lógica para mostrar paginación inteligente (1, ... 4, 5, 6 ... 10)
+                        if ($i == 1 || $i == $total_paginas || ($i >= $pagina_actual - $rango && $i <= $pagina_actual + $rango)) {
+                            $clase_activa = ($i == $pagina_actual) ? 'active' : '';
+                            echo '<a href="' . getPaginationUrl($i) . '" class="' . $clase_activa . '">' . $i . '</a>';
+                        }
+                        
+                        // Poner puntos suspensivos (...)
+                        elseif ($i == $pagina_actual - $rango - 1 || $i == $pagina_actual + $rango + 1) {
+                            echo '<span style="padding: 8px 12px; color: #666;">...</span>';
+                        }
+                    }
+                    ?>
 
                     <?php if ($pagina_actual < $total_paginas): ?>
                         <a href="<?php echo getPaginationUrl($pagina_actual + 1); ?>">Siguiente &raquo;</a>
                     <?php endif; ?>
+                    
                 </div>
+                
                 <div style="text-align: center; margin-top: 10px; color: #666;">
                     Página <?php echo $pagina_actual; ?> de <?php echo $total_paginas; ?> (Total: <?php echo $total_registros; ?> registros)
                 </div>

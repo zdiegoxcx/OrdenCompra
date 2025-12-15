@@ -1,23 +1,40 @@
 <?php
-// ... (Toda la lógica de inicio de sesión y usuario se mantiene IGUAL al original) ...
+// crear_orden.php
+
+// 1. Sesión y Seguridad
 session_start();
-if (!isset($_SESSION['user_id'])) { header("Location: login.php"); exit; }
-include 'conectar.php';
+if (!isset($_SESSION['user_id'])) { 
+    header("Location: login.php"); 
+    exit; 
+}
+
+// 2. Conexión a BD
+include 'config/db.php';
+
 $user_id = $_SESSION['user_id'];
-// ... (consultas de usuario igual que antes) ...
+
+// 3. Obtener datos del usuario
 $sql_user = "SELECT u.Nombre AS NombreUsuario, u.Email, u.Telefono, d.Nombre AS NombreDepartamento FROM Usuario u LEFT JOIN Departamento d ON u.Departamento_Id = d.Id WHERE u.Id = ?";
 $stmt_user = $conn->prepare($sql_user);
 $stmt_user->bind_param("i", $user_id);
 $stmt_user->execute();
 $resultado_user = $stmt_user->get_result();
 $usuario = $resultado_user->fetch_assoc();
-if (!$usuario) { session_destroy(); header("Location: login.php?error=user_not_found"); exit; }
+
+if (!$usuario) { 
+    session_destroy(); 
+    header("Location: login.php?error=user_not_found"); 
+    exit; 
+}
+
 $fecha_hoy = date("d/m/Y");
 $nombre_usuario = htmlspecialchars($usuario['NombreUsuario']);
 $depto_usuario = htmlspecialchars($usuario['NombreDepartamento']);
 $email_usuario = htmlspecialchars($usuario['Email']);
 $fono_usuario = htmlspecialchars($usuario['Telefono']);
 $user_rol = $_SESSION['user_rol'];
+
+// Obtener licitaciones para el select
 $sql_licitaciones = "SELECT Id, Nombre_Orden FROM Orden_Pedido WHERE Tipo_Compra = 'Licitación Pública' ORDER BY Id DESC";
 $res_licitaciones = $conn->query($sql_licitaciones);
 $stmt_user->close();
@@ -28,7 +45,7 @@ $stmt_user->close();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crear Nueva Orden</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="assets/css/styles.css">
     <style>
         /* Estilo simple para ocultar/mostrar la columna nueva */
         .col-id-producto { display: none; }
@@ -42,7 +59,7 @@ $stmt_user->close();
         </header>
 
         <main class="app-content">
-        <form id="form-crear-orden" action="procesar_orden.php" method="POST" enctype="multipart/form-data">
+            <form id="form-crear-orden" action="controllers/orden_crear.php" method="POST" enctype="multipart/form-data">
 
                 <div id="form-view">
                     <h2>Formulario de Creación de Orden de Pedido</h2>
@@ -58,28 +75,27 @@ $stmt_user->close();
                     </fieldset>
 
                     <fieldset>
-
-                    <legend>2. Datos Generales de la Orden</legend>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="nombre-orden">Nombre de la Compra <span style="color: red;">*</span></label>
-                            <input type="text" id="nombre-orden" name="nombre_orden" maxlength="100" required placeholder="Ej: Servicio de mantención...">
-                        </div>
-                        <div class="form-group">
-                            <label for="plazo-max">Plazo Máximo de Entrega <span style="color: red;">*</span></label>
-                            <input type="date" id="plazo-max" name="plazo_maximo" min="<?php echo date('Y-m-d'); ?>" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="tipo-compra">Tipo de Compra <span style="color: red;">*</span></label>
-                            <select id="tipo-compra" name="tipo_compra" required>
-                                <option value="">Seleccione...</option>
-                                <option value="Convenio Marco">Convenio Marco</option> 
-                                <option value="Compra Ágil">Compra Ágil</option>
-                                <option value="Trato Directo">Trato Directo</option>
-                                <option value="Licitación Pública">Licitación Pública</option>
-                                <option value="Licitación Privada">Licitación Privada</option>
-                                <option value="Suministro">Suministro</option>
-                            </select>
+                        <legend>2. Datos Generales de la Orden</legend>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="nombre-orden">Nombre de la Compra <span style="color: red;">*</span></label>
+                                <input type="text" id="nombre-orden" name="nombre_orden" maxlength="100" required placeholder="Ej: Servicio de mantención...">
+                            </div>
+                            <div class="form-group">
+                                <label for="plazo-max">Plazo Máximo de Entrega <span style="color: red;">*</span></label>
+                                <input type="date" id="plazo-max" name="plazo_maximo" min="<?php echo date('Y-m-d'); ?>" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="tipo-compra">Tipo de Compra <span style="color: red;">*</span></label>
+                                <select id="tipo-compra" name="tipo_compra" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="Convenio Marco">Convenio Marco</option> 
+                                    <option value="Compra Ágil">Compra Ágil</option>
+                                    <option value="Trato Directo">Trato Directo</option>
+                                    <option value="Licitación Pública">Licitación Pública</option>
+                                    <option value="Licitación Privada">Licitación Privada</option>
+                                    <option value="Suministro">Suministro</option>
+                                </select>
                             </div>
                         </div>
                         <div class="form-group full-width">
@@ -129,26 +145,17 @@ $stmt_user->close();
                                 <select id="id_licitacion_publica" name="id_licitacion_publica">
                                     <option value="">Seleccione...</option>
                                     <?php
-                                        // Verificamos si hay resultados
-                                        if ($res_licitaciones && $res_licitaciones->num_rows > 0) {
-                                            // Recorremos cada fila encontrada
-                                            while($row = $res_licitaciones->fetch_assoc()) {
-                                                
-                                                // Preparamos el ID y el Nombre
-                                                $id = $row['Id'];
-                                                $nombre = htmlspecialchars($row['Nombre_Orden']); // htmlspecialchars evita errores con tildes/comillas
-                                                
-                                                // Creamos el formato solicitado: "id: 1 - Nombre"
-                                                $texto_opcion = "id: $id - $nombre";
-                                                
-                                                // Imprimimos la opción
-                                                // El 'value' será el ID para guardarlo en la BD, pero el usuario verá el texto formateado
-                                                echo "<option value='$id'>$texto_opcion</option>";
-                                            }
-                                        } else {
-                                            echo "<option value='' disabled>No hay licitaciones disponibles</option>";
+                                    if ($res_licitaciones && $res_licitaciones->num_rows > 0) {
+                                        while($row = $res_licitaciones->fetch_assoc()) {
+                                            $id = $row['Id'];
+                                            $nombre = htmlspecialchars($row['Nombre_Orden']);
+                                            $texto_opcion = "id: $id - $nombre";
+                                            echo "<option value='$id'>$texto_opcion</option>";
                                         }
-                                        ?>
+                                    } else {
+                                        echo "<option value='' disabled>No hay licitaciones disponibles</option>";
+                                    }
+                                    ?>
                                 </select>
                             </div>
                         </div>
@@ -157,28 +164,23 @@ $stmt_user->close();
                     <fieldset id="fieldset-trato-directo" style="display: none;">
                         <legend>3.5. Documentos Requeridos (Trato Directo)</legend>
                         <div class="form-grid">
-
                             <div class="form-group">
                                 <label>1° Cotización (Máx 3) <span style="color: red;">*</span></label>
                                 <input type="file" id="cotizacion_file" name="cotizacion_file[]" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
                                 <div id="lista-cotizacion" class="file-list"></div>
                             </div>
-
                             <div class="form-group">
                                 <label>2° Memorando (Máx 3) <span style="color: red;">*</span></label>
                                 <input type="file" id="memorando_file" name="memorando_file[]" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
                                 <div id="lista-memorando" class="file-list"></div>
                             </div>
-
                             <div class="form-group">
                                 <label>3° Decreto (Máx 3) <span style="color: red;">*</span></label>
                                 <input type="file" id="decreto_file" name="decreto_file[]" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
                                 <div id="lista-decreto" class="file-list"></div>
                             </div>
-
                         </div>
                     </fieldset>
-
 
                     <fieldset>
                         <legend>4. Detalle de Productos/Servicios</legend>
@@ -186,9 +188,7 @@ $stmt_user->close();
                             <thead>
                                 <tr>
                                     <th style="width: 10%;">Cantidad <span style="color: red;">*</span></th>
-                                    
                                     <th class="col-id-producto">ID Producto <span style="color: red;">*</span></th>
-                                    
                                     <th>Producto o Servicio <span style="color: red;">*</span></th>
                                     <th class="col-v-unitario" style="width: 20%;">V. Unitario ($) <span style="color: red;">*</span></th>
                                     <th class="col-total-linea" style="width: 20%;">Total Línea ($) </th>
@@ -203,22 +203,18 @@ $stmt_user->close();
                                             onkeydown="if(['e', 'E', '.', '-', '+'].includes(event.key)) event.preventDefault();"
                                             required>
                                     </td>
-                                    
                                     <td class="col-id-producto">
                                         <input type="text" name="item_codigo[]" placeholder="ID CM" maxlength="30">
                                     </td>
-
                                     <td>
                                         <input type="text" name="item_nombre[]" placeholder="Descripción del producto" maxlength="100" required>
                                     </td>
-
                                     <td class="col-v-unitario">
                                         <input type="number" name="item_v_unitario[]" class="input-v-unitario input-calc" value="0" min="0" step="1" 
                                             onkeydown="if(['e', 'E', '.', '-', '+'].includes(event.key)) event.preventDefault();"
                                             oninput="if(this.value.length > 15) this.value = this.value.slice(0, 15);"
                                             required>
                                     </td>
-
                                     <td class="col-total-linea"><span class="total-linea">0</span></td>
                                     <td><button type="button" class="accion-btn btn-delete-item">🗑️</button></td>
                                 </tr>
@@ -227,17 +223,14 @@ $stmt_user->close();
                         <button type="button" class="btn btn-add-item">➕ Agregar Ítem</button>
                     </fieldset>
 
-
                     <fieldset>
                         <legend>4.5. Archivos Adicionales (Opcional)</legend>
                         <div class="form-group full-width">
                             <label>Adjuntar otros documentos (Máx 3)</label>
                             <input type="file" id="archivos_adicionales" name="archivos_adicionales[]" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx">
-                            
                             <div id="lista-adicionales" class="file-list"></div>
                         </div>
                     </fieldset>
-
 
                     <fieldset>
                         <legend>5. Totales (Cálculo Automático)</legend>
@@ -261,9 +254,10 @@ $stmt_user->close();
                         <a href="index.php" class="btn btn-danger">Cancelar</a>
                         <button type="submit" class="btn btn-success">➡️ Enviar a Aprobación</button>
                     </div>
+                </div>
             </form>
         </main>
     </div>
-    <script src="js/crear.js"></script>
+    <script src="assets/js/crear.js"></script>
 </body>
 </html>
