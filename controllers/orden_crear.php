@@ -42,6 +42,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $iva = $_POST['iva_hidden'];
         $valor_total = $_POST['valor_total_hidden'];
         
+
+        if ($tipo_compra === 'Compra Ágil' || $tipo_compra === 'Licitación Pública' || $tipo_compra === 'Licitación Privada') {
+            
+            $presupuesto_num = (float)$presupuesto;
+            
+            $valor_neto = $presupuesto_num;
+            $valor_total = $presupuesto_num;
+            $iva = 0;
+        }
         // Determinar el estado inicial según el rol del solicitante
         // Si es Director, pasa directo a firma de Alcalde (o estado superior). Si no, firma su jefe (Director).
         // NOTA: Ajusta esta lógica según tu flujo exacto. Aquí asumo: 

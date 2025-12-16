@@ -219,6 +219,7 @@ function getStatusClass($estado) {
                                     <option value="Compra Ágil" <?php if($filtro_tipo=='Compra Ágil') echo 'selected'; ?>>Compra Ágil</option>
                                     <option value="Trato Directo" <?php if($filtro_tipo=='Trato Directo') echo 'selected'; ?>>Trato Directo</option>
                                     <option value="Licitación Pública" <?php if($filtro_tipo=='Licitación Pública') echo 'selected'; ?>>Licitación Pública</option>
+                                    <option value="Licitación Privada" <?php if($filtro_tipo=='Licitación Privada') echo 'selected'; ?>>Licitación Privada</option>
                                     <option value="Suministro" <?php if($filtro_tipo=='Suministro') echo 'selected'; ?>>Suministro</option>
                                 </select>
                             </div>

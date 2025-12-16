@@ -1,0 +1,23 @@
+:root {
+    /* Paleta de Colores (Estilo Corporativo Moderno) */
+    --primary-color: #0f62fe;       /* Azul IBM/Enterprise */
+    --primary-hover: #0353e9;
+    --secondary-color: #697077;     /* Gris neutro */
+    --success-color: #198038;       /* Verde semáforo oscuro */
+    --danger-color: #da1e28;        /* Rojo alerta */
+    --warning-color: #f1c21b;       /* Amarillo advertencia */
+    
+    /* Fondos y Textos */
+    --bg-body: #f4f7f9;             /* Gris muy suave para el fondo */
+    --bg-card: #ffffff;             /* Blanco puro */
+    --text-main: #212529;           /* Casi negro para lectura */
+    --text-muted: #6c757d;          /* Gris para etiquetas */
+    --border-color: #dde2e6;        /* Bordes sutiles */
+
+    /* Espaciado y Radios */
+    --border-radius: 6px;           /* Bordes ligeramente redondeados */
+    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Sombra suave */
+    
+    /* Tipografía */
+    --font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}

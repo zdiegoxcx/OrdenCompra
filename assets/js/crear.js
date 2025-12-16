@@ -310,12 +310,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     presupuestoInput.addEventListener('input', () => {
         const tipo = tipoCompraSelect.value;
-        if (tipo === 'Compra Ágil' || tipo === 'Licitación Pública') {
+        // CORRECCIÓN: Agregamos la validación para Licitación Privada
+        if (tipo === 'Compra Ágil' || tipo === 'Licitación Pública' || tipo === 'Licitación Privada') {
             const valor = parseFloat(presupuestoInput.value) || 0;
+            
+            // Actualizar visuales
             inputValorNeto.value = valor.toLocaleString('es-CL');
             inputValorTotal.value = valor.toLocaleString('es-CL');
+            
+            // Actualizar inputs ocultos (lo que se envía a la BD)
             valorNetoHidden.value = valor;
             valorTotalHidden.value = valor;
+            
+            // Aseguramos que IVA sea 0 en estos casos
+            ivaHidden.value = 0;
         }
     });
 
