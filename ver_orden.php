@@ -62,6 +62,7 @@ while($f = $res_files->fetch_assoc()) { $archivos[] = $f; }
 
 // 8. LÓGICA DE VISUALIZACIÓN DE FIRMA
 $user_id_actual = $_SESSION['user_id'];
+// Normalizamos el rol a mayúsculas para evitar errores de comparación
 $user_rol_actual = strtoupper($_SESSION['user_rol']); 
 $user_depto_actual = $_SESSION['user_depto']; 
 
@@ -94,7 +95,7 @@ if (in_array($tipo_compra, ['Compra Ágil', 'Licitación Pública', 'Licitación
     $isConvenioMarco = true;
 }
 
-// Lógica de gestión
+// Lógica de gestión (Adquisiciones)
 $mostrar_gestion_box = ($user_rol_actual === 'ADQUISICIONES' && $orden['Estado'] === 'Aprobado');
 ?>
 <!DOCTYPE html>
@@ -176,6 +177,11 @@ $mostrar_gestion_box = ($user_rol_actual === 'ADQUISICIONES' && $orden['Estado']
         }
         #modal-rechazo h2 { margin-top: 0; color: #da1e28; font-size: 1.25rem; display: flex; align-items: center; gap: 10px; }
         #motivo-rechazo-textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; margin: 15px 0; font-family: inherit; }
+
+        /* CLASE FALTANTE AGREGADA PARA QUE EL JS FUNCIONE */
+        .modal-show {
+            display: block !important;
+        }
     </style>
 </head>
 <body>
@@ -208,7 +214,6 @@ $mostrar_gestion_box = ($user_rol_actual === 'ADQUISICIONES' && $orden['Estado']
 
         <main class="form-wrapper">
             <div class="content-card shadow-sm">
-                
                 <div class="form-section-header">
                     <div class="section-icon"><i class="fas fa-user-check"></i></div>
                     <div>
@@ -387,7 +392,9 @@ $mostrar_gestion_box = ($user_rol_actual === 'ADQUISICIONES' && $orden['Estado']
                     </div>
                 </div>
 
-            </div> <?php if ($mostrar_gestion_box): ?>
+            </div> 
+            
+            <?php if ($mostrar_gestion_box): ?>
             <div class="content-card shadow-sm" style="margin-top: 25px; border-left: 5px solid #0f62fe;">
                 <div class="form-section-header">
                     <div class="section-icon" style="background: #e0f2fe; color: #0043ce;"><i class="fas fa-briefcase"></i></div>

@@ -20,8 +20,9 @@ if (!$data) {
 }
 
 $user_id_actual  = $_SESSION['user_id'];
-$user_rol_actual = $_SESSION['user_rol'];   // 'FUNCIONARIO', 'DIRECTOR', 'ALCALDE'
-$user_depto_actual = $_SESSION['user_depto']; // String
+// CORRECCIÓN: Convertir a mayúsculas para coincidir con la lógica de ver_orden.php
+$user_rol_actual = strtoupper($_SESSION['user_rol']);   
+$user_depto_actual = $_SESSION['user_depto'];
 
 $orden_id = $data['orden_id'] ?? 0;
 $accion   = $data['accion'] ?? '';
@@ -47,7 +48,6 @@ try {
 
     $estado_actual = $orden['Estado'];
     $solicitante_id = $orden['Solicitante_Id'];
-    // $solicitante_depto = $orden['DEPTO']; // Ya no es necesario para el Director global
 
     // 2. MATRIZ DE PERMISOS (Lógica de Roles)
     $puede_actuar = false;
@@ -59,7 +59,6 @@ try {
         $nuevo_estado = 'Pend. Firma Director';
     }
     // B: Director firma CUALQUIER orden pendiente de firma de director (Global)
-    // CAMBIO: Se eliminó la validación de departamento ($user_depto_actual === $solicitante_depto)
     elseif ($estado_actual === 'Pend. Firma Director' && $user_rol_actual === 'DIRECTOR') {
         $puede_actuar = true;
         $nuevo_estado = 'Pend. Firma Alcalde';
@@ -71,7 +70,7 @@ try {
     }
 
     if (!$puede_actuar && $accion === 'firmar') {
-        throw new Exception("No tiene permisos para firmar en esta etapa.");
+        throw new Exception("No tiene permisos para firmar en esta etapa. Rol actual: $user_rol_actual, Estado Orden: $estado_actual");
     }
 
     // 3. PROCESAR ACCIÓN
