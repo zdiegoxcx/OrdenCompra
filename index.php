@@ -11,11 +11,10 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 // 2. Conexión a Base de Datos
-// Buscamos la carpeta config/ desde la raíz
 include 'config/db.php';
 
 // 3. Lógica Automática: Actualizar estados expirados
-// Antes de mostrar la tabla, verificamos si hay órdenes "En Espera" que ya vencieron
+// Verifica si hay órdenes "En Espera" que ya vencieron
 $conn->query("
     UPDATE Orden_Pedido op
     INNER JOIN (
@@ -28,11 +27,12 @@ $conn->query("
     AND gc.Ultima_Gestion < DATE_SUB(NOW(), INTERVAL 10 MINUTE)
 ");
 
-// Datos del usuario actual para personalizar la vista
+// Datos del usuario actual (Adaptados a la nueva estructura de sesión)
 $user_id = $_SESSION['user_id'];
-$user_nombre = $_SESSION['user_nombre'];
-$user_rol = $_SESSION['user_rol'];
-$user_depto_id = $_SESSION['user_depto_id'];
+// Aseguramos compatibilidad si en login usaste 'user_name' o 'user_nombre'
+$user_nombre = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : (isset($_SESSION['user_nombre']) ? $_SESSION['user_nombre'] : 'Usuario');
+$user_rol = $_SESSION['user_rol'];     // Viene de la columna ADQUISICIONES
+$user_depto = $_SESSION['user_depto']; // Ahora es el NOMBRE del departamento (String)
 
 // --- CONFIGURACIÓN DE FILTROS (Recibidos por GET) ---
 $busqueda = isset($_GET['busqueda']) ? trim($_GET['busqueda']) : '';
@@ -47,32 +47,40 @@ $pagina_actual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 if ($pagina_actual < 1) $pagina_actual = 1;
 $offset = ($pagina_actual - 1) * $registros_por_pagina;
 
+
 // --- CONSTRUCCIÓN DINÁMICA DE LA CONSULTA SQL ---
 $sql_joins = ""; 
 $sql_where = "";
 $params = [];
 $types = "";
 
-// A. Filtro Base por Rol (Seguridad de Datos)
-// Define qué órdenes tiene permiso de ver cada usuario
-if ($user_rol === 'Director') {
-    // Director: Ve lo de su departamento pendiente de firma O sus propias solicitudes
-    $sql_joins = " JOIN Usuario u ON op.Solicitante_Id = u.Id";
-    $sql_where = " WHERE ((u.Departamento_Id = ? AND op.Estado = 'Pend. Firma Director') OR (op.Solicitante_Id = ?))";
-    $params = [$user_depto_id, $user_id];
-    $types = "ii";
-} else if ($user_rol === 'Alcalde') {
-    // Alcalde: Ve lo pendiente de firma final O sus propias solicitudes
+// 1. Obtener y limpiar el rol de la sesión
+// trim() elimina espacios accidentales y strtoupper() lo hace mayúscula
+$rol_limpio = isset($_SESSION['user_rol']) ? strtoupper(trim($_SESSION['user_rol'])) : 'FUNCIONARIO';
+
+// (Opcional) Descomenta la siguiente línea para ver qué rol detecta el sistema si sigue fallando:
+// die("Rol detectado: [" . $rol_limpio . "]");
+
+if ($rol_limpio === 'DIRECTOR') {
+    // Director: Ve lo pendiente de su firma (Global) O lo suyo propio
+    $sql_where = " WHERE (op.Estado = 'Pend. Firma Director' OR op.Solicitante_Id = ?)";
+    $params = [$user_id];
+    $types = "i";
+
+} else if ($rol_limpio === 'ALCALDE') {
+    // Alcalde: Ve lo pendiente de su firma (Global) O lo suyo propio
     $sql_where = " WHERE (op.Estado = 'Pend. Firma Alcalde' OR op.Solicitante_Id = ?)";
     $params = [$user_id];
     $types = "i";
-} else if ($user_rol === 'EncargadoAdquision') {
-    // Encargado: Ve lo Aprobado/En Espera (para gestionar) O sus propias solicitudes
-    $sql_where = " WHERE (op.Solicitante_Id = ? OR op.Estado IN ('Aprobado', 'En Espera', 'Sin respuesta del vendedor'))";
+
+} else if ($rol_limpio === 'ADQUISICIONES') {
+    // Adquisiciones: Ve lo aprobado/en espera (Global) O lo suyo propio
+    $sql_where = " WHERE (op.Estado IN ('Aprobado', 'En Espera', 'Sin respuesta del vendedor') OR op.Solicitante_Id = ?)";
     $params = [$user_id];
     $types = "i";
+
 } else {
-    // Usuario normal: Solo ve sus propias solicitudes
+    // Funcionario normal (Rol por defecto): Solo ve sus propias solicitudes
     $sql_where = " WHERE (op.Solicitante_Id = ?)";
     $params = [$user_id];
     $types = "i";
@@ -144,14 +152,12 @@ $resultado = $stmt->get_result();
 
 // --- Helpers para la Vista ---
 
-// Genera la URL manteniendo los filtros actuales al cambiar de página
 function getPaginationUrl($page) {
     $queryParams = $_GET;
     $queryParams['pagina'] = $page;
     return '?' . http_build_query($queryParams);
 }
 
-// Devuelve la clase CSS para colorear el estado
 function getStatusClass($estado) {
     switch (strtolower($estado)) {
         case 'aprobado': return 'status-aprobado';
@@ -170,28 +176,41 @@ function getStatusClass($estado) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plataforma de Adquisiciones - Inicio</title>
-    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/variables.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/forms.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
     <div class="app-container">
         
         <header class="app-header">
-            <h1>Plataforma de Adquisiciones</h1>
-            <span>
-                Usuario: <strong><?php echo htmlspecialchars($user_nombre); ?></strong> (<?php echo htmlspecialchars($user_rol); ?>)
-                &nbsp; | &nbsp;
-                <a href="controllers/auth_logout.php" style="color: white; text-decoration: underline;">Cerrar Sesión</a>
-            </span>
+            <div style="display: flex; gap: 30px; align-items: center;">
+                <h1>Gestión Adquisiciones</h1>
+                <a href="crear_orden.php" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Crear Nueva Orden
+                </a>
+            </div>
+
+            <div style="text-align: right;">
+                <span style="display:block; font-weight:bold; color: var(--text-main);">
+                    <?php echo htmlspecialchars($user_nombre); ?>
+                </span>
+                <span style="font-size: 0.85rem; color: var(--text-muted);">
+                    <?php echo htmlspecialchars($user_rol); ?> | <?php echo htmlspecialchars($user_depto); ?>
+                </span>
+                <div style="margin-top: 5px;">
+                    <a href="controllers/auth_logout.php" style="font-size: 0.85rem; color: var(--danger-color);">Cerrar Sesión</a>
+                </div>
+            </div>
         </header>
 
         <main class="app-content">
             <div id="panel-view">
-                <div class="panel-header">
-                    <h2>Mis Órdenes de Pedido</h2>
-                    <a href="crear_orden.php" class="btn btn-primary">Crear Nueva Orden</a>
-                </div>
-
+                
                 <div class="search-container">
                     <form action="index.php" method="GET" class="filter-form">
                         
@@ -210,7 +229,7 @@ function getStatusClass($estado) {
                             </div>
                         </div>
 
-                        <div class="filter-row">
+                        <div class="filter-row" style="margin-top: 15px;">
                             <div class="filter-group grow-1">
                                 <label>Tipo de Compra:</label>
                                 <select name="filtro_tipo">
@@ -235,9 +254,9 @@ function getStatusClass($estado) {
                                     <option value="En Espera" <?php if($filtro_estado=='En Espera') echo 'selected'; ?>>En Espera</option>
                                 </select>
                             </div>
-                            <div class="filter-actions">
+                            <div class="filter-actions" style="align-self: flex-end;">
                                 <button type="submit" class="btn btn-secondary">Filtrar</button>
-                                <a href="index.php" class="btn btn-danger" style="text-decoration:none;">Limpiar</a>
+                                <a href="index.php" class="btn btn-danger" style="text-decoration:none; padding: 10px 15px;">Limpiar</a>
                             </div>
                         </div>
 
@@ -261,9 +280,8 @@ function getStatusClass($estado) {
                                 $statusClass = getStatusClass($fila["Estado"]);
                                 $totalFormateado = number_format($fila["Valor_total"], 0, ',', '.');
                                 
-                                // Enlace a la vista de detalle
                                 echo "<tr class='clickable-row' onclick=\"window.location.href='ver_orden.php?id=" . $fila["Id"] . "'\">";
-                                echo "<td>" . htmlspecialchars($fila["Id"]) . "</td>";
+                                echo "<td>#" . htmlspecialchars($fila["Id"]) . "</td>";
                                 echo "<td>" . htmlspecialchars($fila["Nombre_Orden"]) . "</td>";
                                 echo "<td>" . date("d/m/Y", strtotime($fila["Fecha_Creacion"])) . "</td>";
                                 echo "<td>$ " . htmlspecialchars($totalFormateado) . "</td>";
@@ -271,7 +289,7 @@ function getStatusClass($estado) {
                                 echo "</tr>";
                             }
                         } else {
-                            echo "<tr><td colspan='5' style='text-align:center; padding: 20px;'>No se encontraron órdenes con esos criterios.</td></tr>";
+                            echo "<tr><td colspan='5' style='text-align:center; padding: 30px; color: var(--text-muted);'>No se encontraron órdenes con esos criterios.</td></tr>";
                         }
                         
                         $stmt->close();
@@ -288,19 +306,14 @@ function getStatusClass($estado) {
                     <?php endif; ?>
 
                     <?php 
-                    $rango = 2; // Número de páginas a mostrar a izquierda y derecha de la actual
-
+                    $rango = 2; 
                     for ($i = 1; $i <= $total_paginas; $i++) {
-                        
-                        // Lógica para mostrar paginación inteligente (1, ... 4, 5, 6 ... 10)
                         if ($i == 1 || $i == $total_paginas || ($i >= $pagina_actual - $rango && $i <= $pagina_actual + $rango)) {
                             $clase_activa = ($i == $pagina_actual) ? 'active' : '';
                             echo '<a href="' . getPaginationUrl($i) . '" class="' . $clase_activa . '">' . $i . '</a>';
                         }
-                        
-                        // Poner puntos suspensivos (...)
                         elseif ($i == $pagina_actual - $rango - 1 || $i == $pagina_actual + $rango + 1) {
-                            echo '<span style="padding: 8px 12px; color: #666;">...</span>';
+                            echo '<span style="padding: 8px 12px; color: #999;">...</span>';
                         }
                     }
                     ?>
@@ -311,7 +324,7 @@ function getStatusClass($estado) {
                     
                 </div>
                 
-                <div style="text-align: center; margin-top: 10px; color: #666;">
+                <div style="text-align: center; margin-top: 15px; color: var(--text-muted); font-size: 0.9rem;">
                     Página <?php echo $pagina_actual; ?> de <?php echo $total_paginas; ?> (Total: <?php echo $total_registros; ?> registros)
                 </div>
                 <?php endif; ?>

@@ -3,7 +3,7 @@
 $servername = "localhost";
 $username = "root";
 $password = ""; // Por defecto en XAMPP es vacía
-$dbname = "ordencompra"; // Cambia esto al nombre de tu base de datos
+$dbname = "ordencompra2"; // Cambia esto al nombre de tu base de datos
 
 // 1. Crear la conexión (Estilo Orientado a Objetos)
 $conn = new mysqli($servername, $username, $password, $dbname);

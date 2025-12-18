@@ -1,60 +1,51 @@
 <?php
 // controllers/auth_login.php
-
-// 1. Iniciar la sesión (SIEMPRE al principio)
 session_start();
+require_once '../config/db.php'; 
 
-// 2. Incluir la conexión
-// CAMBIO: Salimos de 'controllers' (../) y entramos a 'config'
-include '../config/db.php';
-
-// 3. Verificar que los datos vengan por POST
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
-    $email = $_POST['email'];
-    $contrasena_ingresada = $_POST['contrasena'];
+    // Obtenemos el RUT y le quitamos espacios
+    $rut = trim($_POST['rut']); 
 
-    // 4. Preparar la consulta (evita Inyección SQL)
-    $sql = "SELECT Id, Nombre, Contrasenha, Rol, Departamento_Id FROM Usuario WHERE Email = ?";
-    
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
-    $resultado = $stmt->get_result();
-
-    // 5. Verificar si se encontró al usuario
-    if ($resultado->num_rows === 1) {
-        $usuario = $resultado->fetch_assoc();
-        
-        // 6. ¡Verificación!
-        if ($contrasena_ingresada === $usuario['Contrasenha']) {
+    // Preparamos la consulta para buscar solo por RUT
+    // Si cambiaste el nombre de la columna ADQUISICIONES a FUNCIONARIO en la BD, cámbialo aquí también.
+    $sql = "SELECT ID, NOMBRE, APELLIDO, DEPTO, ADQUISICIONES 
+            FROM FUNCIONARIOS_MUNI 
+            WHERE RUT = ?";
             
-            // ¡Contraseña correcta!
-            // 7. Regenerar ID de sesión por seguridad
-            session_regenerate_id(true);
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $rut);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-            // 8. Guardar datos clave en la SESIÓN
-            $_SESSION['user_id'] = $usuario['Id'];
-            $_SESSION['user_nombre'] = $usuario['Nombre'];
-            $_SESSION['user_rol'] = $usuario['Rol'];
-            $_SESSION['user_depto_id'] = $usuario['Departamento_Id'];
+    if ($result->num_rows === 1) {
+        // --- USUARIO ENCONTRADO ---
+        $user = $result->fetch_assoc();
 
-            // 9. Redirigir al panel principal (index.php)
-            // CAMBIO: Salimos de 'controllers' para ir al index en la raíz
-            header("Location: ../index.php");
-            exit;
+        // Guardamos variables de sesión
+        $_SESSION['user_id'] = $user['ID'];
+        $_SESSION['user_rut'] = $rut;
+        $_SESSION['user_name'] = $user['NOMBRE'] . " " . $user['APELLIDO'];
+        $_SESSION['user_depto'] = $user['DEPTO'];
+        
+        // Rol del usuario (Jefe, Administrativo, etc.)
+        // Si el campo es nulo, asignamos 'FUNCIONARIO' por defecto
+        $_SESSION['user_rol'] = !empty($user['ADQUISICIONES']) ? $user['ADQUISICIONES'] : 'FUNCIONARIO';
 
-        }
+        // Redirigir al panel principal
+        header("Location: ../index.php");
+        exit;
+        
+    } else {
+        // RUT no encontrado en la base de datos
+        header("Location: ../login.php?error=1");
+        exit;
     }
 
-    // 10. Si algo falla (usuario no existe o pass incorrecta), redirigir de vuelta
-    // CAMBIO: Salimos de 'controllers' para ir a login en la raíz
-    header("Location: ../login.php?error=1");
-    exit;
-
+    $stmt->close();
+    $conn->close();
 } else {
-    // Si alguien intenta acceder a este archivo directamente
-    // CAMBIO: Salimos de 'controllers' para ir a login en la raíz
     header("Location: ../login.php");
     exit;
 }

@@ -13,8 +13,9 @@ include 'config/db.php';
 
 $user_id = $_SESSION['user_id'];
 
-// 3. Obtener datos del usuario
-$sql_user = "SELECT u.Nombre AS NombreUsuario, u.Email, u.Telefono, d.Nombre AS NombreDepartamento FROM Usuario u LEFT JOIN Departamento d ON u.Departamento_Id = d.Id WHERE u.Id = ?";
+// --- CAMBIO: Consulta adaptada a la nueva tabla FUNCIONARIOS_MUNI ---
+// Ya no necesitamos JOIN con Departamento porque el nombre está en la misma tabla
+$sql_user = "SELECT NOMBRE, APELLIDO, CORREO, FONO, DEPTO, ADQUISICIONES FROM FUNCIONARIOS_MUNI WHERE ID = ?";
 $stmt_user = $conn->prepare($sql_user);
 $stmt_user->bind_param("i", $user_id);
 $stmt_user->execute();
@@ -28,13 +29,14 @@ if (!$usuario) {
 }
 
 $fecha_hoy = date("d/m/Y");
-$nombre_usuario = htmlspecialchars($usuario['NombreUsuario']);
-$depto_usuario = htmlspecialchars($usuario['NombreDepartamento']);
-$email_usuario = htmlspecialchars($usuario['Email']);
-$fono_usuario = htmlspecialchars($usuario['Telefono']);
-$user_rol = $_SESSION['user_rol'];
+// Concatenamos Nombre y Apellido
+$nombre_usuario = htmlspecialchars($usuario['NOMBRE'] . " " . $usuario['APELLIDO']);
+$depto_usuario = htmlspecialchars($usuario['DEPTO']); // Ahora es directo
+$email_usuario = htmlspecialchars($usuario['CORREO']);
+$fono_usuario = htmlspecialchars($usuario['FONO']);
+$user_rol = $_SESSION['user_rol']; // Viene de la sesión (ADQUISICIONES)
 
-// Obtener licitaciones para el select
+// Obtener licitaciones para el select (Lógica original intacta)
 $sql_licitaciones = "SELECT Id, Nombre_Orden FROM Orden_Pedido WHERE Tipo_Compra = 'Licitación Pública' ORDER BY Id DESC";
 $res_licitaciones = $conn->query($sql_licitaciones);
 $stmt_user->close();
@@ -47,8 +49,23 @@ $stmt_user->close();
     <title>Crear Nueva Orden</title>
     <link rel="stylesheet" href="assets/css/styles.css">
     <style>
-        /* Estilo simple para ocultar/mostrar la columna nueva */
+        /* Estilos originales conservados */
         .col-id-producto { display: none; }
+        
+        /* Estilo para el Checkbox de IVA */
+        .iva-control-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            font-size: 0.9em;
+            color: #555;
+        }
+        .iva-control-wrapper input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -238,7 +255,13 @@ $stmt_user->close();
                             <label id="label-valor-neto">Valor Neto:</label>
                             <input id="input-valor-neto" type="text" value="0" disabled>
                             
-                            <label id="label-iva">IVA (19%):</label>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label id="label-iva">IVA (19%):</label>
+                                <div class="iva-control-wrapper">
+                                    <input type="checkbox" id="aplica_iva" checked>
+                                    <label for="aplica_iva" style="margin:0; cursor:pointer;">Aplicar IVA</label>
+                                </div>
+                            </div>
                             <input id="input-iva" type="text" value="0" disabled>
 
                             <label id="label-valor-total">Valor Total:</label>

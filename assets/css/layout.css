@@ -1,36 +1,43 @@
 /* Layout Principal */
 .app-container {
     max-width: 1200px;
-    margin: 30px auto;
+    margin: 40px auto; /* Un poco más de margen superior */
     background-color: var(--bg-card);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
-    overflow: hidden; /* Para que el header respete los bordes redondeados */
+    overflow: hidden;
     min-height: 80vh;
+    border: 1px solid var(--border-color); /* Borde sutil para definir la tarjeta */
 }
 
-/* Encabezado */
+/* Encabezado Profesional y Alineado a la Izquierda */
 .app-header {
-    background: linear-gradient(135deg, #0f62fe 0%, #0043ce 100%); /* Degradado profesional */
-    color: white;
-    padding: 15px 30px;
+    background-color: #ffffff; /* Fondo blanco en lugar de azul */
+    color: var(--text-main);   /* Texto oscuro */
+    padding: 25px 30px;        /* Más espacio (padding) para que respire */
+    
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start; /* <--- ESTO MUEVE EL BOTÓN A LA IZQUIERDA (junto al título) */
     align-items: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    gap: 30px;                 /* <--- Espacio entre el título y el botón */
+    
+    border-bottom: 1px solid var(--border-color); /* Línea divisoria sutil */
 }
 
+/* Título más elegante */
 .app-header h1 {
     margin: 0;
-    font-size: 1.5rem;
-    font-weight: 600;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: -0.5px; /* Tracking moderno */
 }
 
 .app-content {
     padding: 40px;
 }
 
-/* Paginación */
+/* Paginación (sin cambios, se mantiene limpia) */
 .pagination {
     display: flex;
     justify-content: center;

@@ -1,16 +1,24 @@
 <?php
 // controllers/auth_logout.php
 
-// 1. Unirse a la sesión existente
-session_start(); 
+session_start();
 
-// 2. Limpiar todas las variables de sesión
+// 1. Destruir todas las variables de sesión
 $_SESSION = array();
 
-// 3. Destruir la sesión del servidor
+// 2. Borrar la cookie de sesión si existe
+if (ini_get("session.use_cookies")) {
+    $params = session_get_cookie_params();
+    setcookie(session_name(), '', time() - 42000,
+        $params["path"], $params["domain"],
+        $params["secure"], $params["httponly"]
+    );
+}
+
+// 3. Destruir la sesión completamente
 session_destroy();
 
-// 4. Redirigir al formulario de login
+// 4. Redirigir al login
 header("Location: ../login.php");
 exit;
 ?>
