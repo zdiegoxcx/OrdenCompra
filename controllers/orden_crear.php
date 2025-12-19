@@ -74,7 +74,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // 2. LÓGICA DE ARCHIVOS (Tu función original)
         // -----------------------------------------------------------------
         $uploadDir = '../uploads/'; 
-
+        // --- AGREGAR ESTO: Crear carpeta si no existe ---
+        if (!file_exists($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+        // ------------------------------------------------
         function subirArchivosMultiples($inputName, $tipoDoc, $ordenId, $conn, $dir, $maxFiles = 3) {
             if (isset($_FILES[$inputName]) && is_array($_FILES[$inputName]['name'])) {
                 $files = $_FILES[$inputName];

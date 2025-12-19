@@ -62,7 +62,6 @@ while($f = $res_files->fetch_assoc()) { $archivos[] = $f; }
 
 // 8. LÓGICA DE VISUALIZACIÓN DE FIRMA
 $user_id_actual = $_SESSION['user_id'];
-// Normalizamos el rol a mayúsculas para evitar errores de comparación
 $user_rol_actual = strtoupper($_SESSION['user_rol']); 
 $user_depto_actual = $_SESSION['user_depto']; 
 
@@ -95,7 +94,7 @@ if (in_array($tipo_compra, ['Compra Ágil', 'Licitación Pública', 'Licitación
     $isConvenioMarco = true;
 }
 
-// Lógica de gestión (Adquisiciones)
+// Lógica de gestión
 $mostrar_gestion_box = ($user_rol_actual === 'ADQUISICIONES' && $orden['Estado'] === 'Aprobado');
 ?>
 <!DOCTYPE html>
@@ -109,6 +108,9 @@ $mostrar_gestion_box = ($user_rol_actual === 'ADQUISICIONES' && $orden['Estado']
     <link rel="stylesheet" href="assets/css/forms-pro.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        /* Regla global para evitar desbordamientos */
+        * { box-sizing: border-box; }
+
         /* Estilos específicos para visualización (read-only) */
         .read-only-input {
             background-color: #f8fafc;
@@ -139,61 +141,131 @@ $mostrar_gestion_box = ($user_rol_actual === 'ADQUISICIONES' && $orden['Estado']
         .file-icon { margin-right: 10px; color: var(--primary); font-size: 1.2rem; }
         .file-type { font-size: 0.75rem; color: #64748b; text-transform: uppercase; margin-right: 8px; font-weight: 700; }
 
-        /* Tarjeta de Firma (Action Card) */
-        .signature-card {
-            background: linear-gradient(to right, #eff6ff, #ffffff);
-            border: 1px solid #bfdbfe;
-            border-radius: 12px;
-            padding: 25px;
-            margin-top: 30px;
-            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1);
-        }
-        .signature-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 20px;
-            color: #1e40af;
-        }
-        .signature-header h3 { margin: 0; font-size: 1.1rem; }
-        
+        /* Estilo para el input del Token */
         .token-input {
-            font-size: 1.2rem;
-            letter-spacing: 4px;
-            text-align: center;
-            border: 2px solid #3b82f6;
-            max-width: 200px;
+            font-size: 1.1rem;
+            letter-spacing: 3px;
+            text-align: left;
+            border: 2px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 8px 12px;
+            width: 150px;
+            transition: all 0.3s;
+        }
+        .token-input:focus {
+            border-color: #16a34a;
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+            outline: none;
         }
 
-        /* Modal Personalizado */
+        /* --- MODAL DE RECHAZO CORREGIDO --- */
         #modal-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 1000; backdrop-filter: blur(2px);
+            display: none; 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 1000; backdrop-filter: blur(3px);
+            
+            /* FLEXBOX PARA CENTRADO PERFECTO */
+            align-items: center;
+            justify-content: center;
         }
+        
         #modal-rechazo {
-            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 500px;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); z-index: 1001;
+            /* Ya no usa position absolute/fixed porque está dentro del flex */
+            position: relative;
+            background: white; border-radius: 14px; width: 95%; max-width: 550px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); z-index: 1001;
+            overflow: hidden;
+            display: block; /* Siempre visible dentro del overlay cuando el overlay es visible */
         }
-        #modal-rechazo h2 { margin-top: 0; color: #da1e28; font-size: 1.25rem; display: flex; align-items: center; gap: 10px; }
-        #motivo-rechazo-textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; margin: 15px 0; font-family: inherit; }
 
-        /* CLASE FALTANTE AGREGADA PARA QUE EL JS FUNCIONE */
-        .modal-show {
-            display: block !important;
+        /* Clases que activa JS */
+        #modal-overlay.modal-show { display: flex !important; }
+        
+        /* Encabezado del Modal */
+        .modal-header {
+            background-color: #fef2f2;
+            padding: 15px 25px;
+            border-bottom: 1px solid #fee2e2;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .modal-header h2 { margin: 0; color: #991b1b; font-size: 1.1rem; font-weight: 700; }
+        
+        .modal-body { padding: 25px; }
+        
+        .modal-footer {
+            padding: 15px 25px;
+            background-color: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            display: flex; justify-content: flex-end; gap: 12px;
+        }
+
+        /* Textarea Corregido */
+        #motivo-rechazo-textarea { 
+            width: 100%; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 8px; 
+            padding: 12px; 
+            margin-top: 10px; 
+            font-family: inherit;
+            resize: none; 
+            height: 120px;
+            box-sizing: border-box; /* IMPORTANTE PARA EVITAR DESBORDE */
+        }
+        #motivo-rechazo-textarea:focus { border-color: #ef4444; outline: none; }
+
+        /* --- BOTONES NUEVOS --- */
+        .btn-cancel-styled {
+            background: white; border: 1px solid #cbd5e1; padding: 9px 18px; border-radius: 8px; 
+            cursor: pointer; color: #475569; font-weight: 600; transition: all 0.2s;
+        }
+        .btn-cancel-styled:hover { background: #f1f5f9; border-color: #94a3b8; }
+
+        /* Botón ROJO Bonito (Para Modal y para Acción Principal) */
+        .btn-danger-styled {
+            background: linear-gradient(to bottom, #ef4444, #dc2626);
+            border: none;
+            color: white;
+            padding: 9px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 4px 6px rgba(239, 68, 68, 0.25);
+            transition: all 0.2s ease;
+            display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+        }
+        .btn-danger-styled:hover {
+            background: linear-gradient(to bottom, #dc2626, #b91c1c);
+            box-shadow: 0 6px 10px rgba(239, 68, 68, 0.3);
+            transform: translateY(-1px);
+        }
+
+        /* Utilidad de firma compacta */
+        .signature-row {
+            display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap;
         }
     </style>
 </head>
 <body>
 
-    <div id="modal-overlay"></div>
-    <div id="modal-rechazo">
-        <h2><i class="fas fa-exclamation-triangle"></i> Confirmar Rechazo</h2>
-        <p style="color: #64748b; font-size: 0.9rem;">Por favor, indique el motivo por el cual se rechaza esta orden. Esta información será visible para el solicitante.</p>
-        <textarea id="motivo-rechazo-textarea" rows="4" placeholder="Escriba el motivo aquí..."></textarea>
-        <div style="display: flex; justify-content: flex-end; gap: 10px;">
-            <button id="btn-cancelar-rechazo" class="btn-cancel" style="background: #f1f5f9; padding: 10px 20px; border-radius: 6px; border:none; cursor: pointer;">Cancelar</button>
-            <button id="btn-enviar-rechazo" class="btn-submit" style="background: #da1e28; border:none; color: white;">Confirmar Rechazo</button>
+    <div id="modal-overlay">
+        <div id="modal-rechazo" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <i class="fas fa-exclamation-triangle" style="color: #dc2626;"></i>
+                <h2>Confirmar Rechazo</h2>
+            </div>
+            <div class="modal-body">
+                <p style="color: #475569; font-size: 0.95rem; margin-top: 0; line-height: 1.5;">
+                    Está a punto de rechazar esta solicitud. Es necesario ingresar un motivo para que el solicitante pueda corregirlo.
+                </p>
+                <label style="display: block; margin-top: 15px; font-weight: 600; font-size: 0.9rem; color: #334155;">Motivo del rechazo:</label>
+                <textarea id="motivo-rechazo-textarea" placeholder="Ej: Falta adjuntar la cotización actualizada..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-cancelar-rechazo" class="btn-cancel-styled">Cancelar</button>
+                <button id="btn-enviar-rechazo" class="btn-danger-styled">
+                    <i class="fas fa-times-circle"></i> Confirmar Rechazo
+                </button>
+            </div>
         </div>
     </div>
 
@@ -213,6 +285,7 @@ $mostrar_gestion_box = ($user_rol_actual === 'ADQUISICIONES' && $orden['Estado']
         </header>
 
         <main class="form-wrapper">
+            
             <div class="content-card shadow-sm">
                 <div class="form-section-header">
                     <div class="section-icon"><i class="fas fa-user-check"></i></div>
@@ -392,9 +465,7 @@ $mostrar_gestion_box = ($user_rol_actual === 'ADQUISICIONES' && $orden['Estado']
                     </div>
                 </div>
 
-            </div> 
-            
-            <?php if ($mostrar_gestion_box): ?>
+            </div> <?php if ($mostrar_gestion_box): ?>
             <div class="content-card shadow-sm" style="margin-top: 25px; border-left: 5px solid #0f62fe;">
                 <div class="form-section-header">
                     <div class="section-icon" style="background: #e0f2fe; color: #0043ce;"><i class="fas fa-briefcase"></i></div>
@@ -419,30 +490,45 @@ $mostrar_gestion_box = ($user_rol_actual === 'ADQUISICIONES' && $orden['Estado']
             <?php endif; ?>
 
             <?php if ($mostrar_firma_box): ?>
-            <div class="signature-card">
-                <div class="signature-header">
-                    <i class="fas fa-pen-nib fa-2x"></i>
+            <div class="content-card shadow-sm" style="margin-top: 20px; border-left: 5px solid #16a34a;">
+                <div class="form-section-header" style="padding-bottom: 5px;">
+                    <div class="section-icon" style="background: #dcfce7; color: #16a34a;">
+                        <i class="fas fa-pen-nib"></i>
+                    </div>
                     <div>
-                        <h3>Firma Digital Requerida</h3>
-                        <p style="margin:0; font-size:0.9rem; color: #1e3a8a;">Usted tiene permisos para aprobar o rechazar esta solicitud.</p>
+                        <h2>Firma Digital Requerida</h2>
+                        <p style="margin-bottom: 0;">Autorización pendiente</p>
                     </div>
                 </div>
                 
-                <fieldset id="fieldset-firma-accion" data-orden-id="<?php echo $orden['Id']; ?>" style="border: none; padding: 0; margin: 0;">
-                    <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; margin-bottom: 25px;">
-                        <label style="font-weight: 600; color: #1e40af;">Ingrese su Token de Seguridad (Primeros 6 dígitos del RUT)</label>
-                        <input type="password" id="token-input" class="token-input" placeholder="123456" maxlength="6">
-                    </div>
-                    
-                    <div style="display: flex; justify-content: center; gap: 20px;">
-                        <button id="btn-rechazar" class="btn-cancel" style="border: 1px solid #ef4444; color: #ef4444;">
-                            <i class="fas fa-times-circle"></i> Rechazar
-                        </button>
-                        <button id="btn-firmar" class="btn-submit" style="background: #16a34a; box-shadow: 0 4px 6px rgba(22, 163, 74, 0.2);">
-                            <i class="fas fa-check-circle"></i> Firmar y Aprobar
-                        </button>
-                    </div>
-                </fieldset>
+                <div class="form-body" style="padding-top: 15px;">
+                    <fieldset id="fieldset-firma-accion" data-orden-id="<?php echo $orden['Id']; ?>" style="border: none; padding: 0; margin: 0;">
+                        
+                        <div class="signature-row">
+                            
+                            <div style="flex: 1; min-width: 250px;">
+                                <label style="display: block; font-weight: 600; color: #334155; margin-bottom: 8px; font-size: 0.9rem;">
+                                    Token de Seguridad
+                                </label>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <input type="password" id="token-input" class="token-input" placeholder="• • • • • •" maxlength="6">
+                                    <span style="font-size: 0.8rem; color: #64748b; font-style: italic;">(6 dígitos RUT)</span>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; gap: 10px;">
+                                <button id="btn-rechazar" class="btn-danger-styled">
+                                    <i class="fas fa-times-circle"></i> Rechazar
+                                </button>
+                                <button id="btn-firmar" class="btn-submit" style="background: #16a34a; border: none; color: white; cursor: pointer; box-shadow: 0 4px 6px rgba(22, 163, 74, 0.2); padding: 9px 20px;">
+                                    <i class="fas fa-check-circle"></i> Firmar y Aprobar
+                                </button>
+                            </div>
+
+                        </div>
+
+                    </fieldset>
+                </div>
             </div>
             
             <?php else: ?>

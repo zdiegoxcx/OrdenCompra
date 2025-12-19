@@ -220,7 +220,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <input type="text" name="item_codigo[]" placeholder="ID CM" maxlength="30">
             </td>
             <td>
-                <input type="text" name="item_nombre[]" placeholder="Descripción del producto" maxlength="100" required>
+                <input type="text" name="item_nombre[]" 
+                 maxlength="100" required>
             </td>
             <td class="col-v-unitario">
                 <input type="number" name="item_v_unitario[]" class="input-v-unitario input-calc" value="0" min="0" step="1" 
@@ -229,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     required>
             </td>
             <td class="col-total-linea"><span class="total-linea">0</span></td>
-            <td><button type="button" class="accion-btn btn-delete-item">🗑️</button></td>
+            <td><button type="button" class="btn-delete-item"><i class="fas fa-trash-alt"></i></button></td>
         `;
         tablaItemsBody.appendChild(nuevaFila);
         manejarTipoCompra();
@@ -244,13 +245,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnAgregarItem.addEventListener('click', agregarFila);
 
+    // --- SOLUCIÓN: Usar closest para detectar el botón aunque se clickee el icono ---
     tablaItemsBody.addEventListener('click', (e) => {
-        if (e.target.classList.contains('btn-delete-item')) {
+        // Buscamos el botón más cercano al elemento clickeado
+        const btnEliminar = e.target.closest('.btn-delete-item');
+
+        // Si encontramos el botón...
+        if (btnEliminar) {
             if (tablaItemsBody.querySelectorAll("tr").length <= 1) {
                 alert("Debe haber al menos un ítem.");
                 return;
             }
-            e.target.closest('tr').remove();
+            
+            // Eliminamos la fila correspondiente al botón encontrado
+            btnEliminar.closest('tr').remove();
             
             const tipo = tipoCompraSelect.value;
             if (tipo !== 'Compra Ágil' && tipo !== 'Licitación Pública' && tipo !== 'Licitación Privada') {

@@ -2,12 +2,19 @@ SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
 
--- ==========================================================
--- 1. TABLA FUNCIONARIOS (Reemplaza a Usuario y Departamento)
--- ==========================================================
-
+-- ==========================================
+-- 0. LIMPIEZA (Borrar tablas en orden inverso)
+-- ==========================================
+DROP TABLE IF EXISTS `Orden_Archivos`;
+DROP TABLE IF EXISTS `Firmas_Orden`;
+DROP TABLE IF EXISTS `Gestion_Compra`;
+DROP TABLE IF EXISTS `Orden_Item`;
+DROP TABLE IF EXISTS `Orden_Pedido`;
 DROP TABLE IF EXISTS `FUNCIONARIOS_MUNI`;
 
+-- ==========================================================
+-- 1. TABLA FUNCIONARIOS
+-- ==========================================================
 CREATE TABLE `FUNCIONARIOS_MUNI` (
   `ID` int NOT NULL AUTO_INCREMENT,
   `RUT` varchar(25) NOT NULL,
@@ -26,7 +33,7 @@ CREATE TABLE `FUNCIONARIOS_MUNI` (
   `TITULO_PROF` varchar(250) DEFAULT NULL,
   `FONO` varchar(250) DEFAULT NULL,
   `DEPENDE` varchar(150) DEFAULT NULL,
-  `ADQUISICIONES` varchar(255) DEFAULT NULL, -- Nueva columna para permisos de compra
+  `ADQUISICIONES` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`ID`),
   KEY `idx_rut` (`RUT`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -34,7 +41,6 @@ CREATE TABLE `FUNCIONARIOS_MUNI` (
 -- ==========================================
 -- 2. INSERTAR DATOS (FUNCIONARIOS)
 -- ==========================================
-
 INSERT INTO `FUNCIONARIOS_MUNI` (`ID`, `RUT`, `NOMBRE`, `APELLIDO`, `TIPO_CONTRATO`, `ESCALAFON`, `GRADO`, `SEXO`, `FECHA_INGRESO`, `FECHA_TERMINO`, `DEPTO`, `CARGO`, `FUNCIONES`, `CORREO`, `TITULO_PROF`, `FONO`, `DEPENDE`) VALUES
 (1, '3234681-2', 'Jose Francisco ', 'Saez Rivas', 'Codigo del Trabajo', 'C.T.', 0, 'M', '2023-01-01', NULL, 'DIDECO', 'DIDECO', 'DIDECO', NULL, NULL, NULL, NULL),
 (2, '5835979-3', 'Segundo Juan ', 'Beltran Vines', 'Codigo del Trabajo', 'C.T.', 0, 'M', '2023-01-01', NULL, 'ALCALDIA', 'ALCALDIA', 'ALCALDIA', NULL, NULL, NULL, NULL),
@@ -139,91 +145,94 @@ INSERT INTO `FUNCIONARIOS_MUNI` (`ID`, `RUT`, `NOMBRE`, `APELLIDO`, `TIPO_CONTRA
 
 
 -- ==========================================
--- 3. TABLA ORDEN_PEDIDO
+-- 3. TABLA ORDEN_PEDIDO (Corregida con Id_Licitacion)
 -- ==========================================
+CREATE TABLE `Orden_Pedido` (
+  `Id` INT NOT NULL AUTO_INCREMENT,
+  `Solicitante_Id` INT DEFAULT NULL,
+  `Nombre_Orden` VARCHAR(255) DEFAULT NULL,
+  `Fecha_Creacion` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `Tipo_Compra` VARCHAR(100) DEFAULT NULL,
+  `Presupuesto` VARCHAR(100) DEFAULT NULL,
+  `Subprog` VARCHAR(100) DEFAULT NULL,
+  `Centro_Costos` VARCHAR(100) DEFAULT NULL,
+  `Valor_neto` DECIMAL(12, 2) DEFAULT NULL,
+  `Plazo_maximo` VARCHAR(100) DEFAULT NULL,
+  `Iva` DECIMAL(10, 2) DEFAULT NULL,
+  `Valor_total` DECIMAL(12, 2) DEFAULT NULL,
+  `Estado` VARCHAR(50) DEFAULT NULL,
+  `Motivo_Rechazo` TEXT DEFAULT NULL,
+  `Motivo_Compra` TEXT DEFAULT NULL,
+  `Cuenta_Presupuestaria` VARCHAR(100) DEFAULT NULL,
+  
+  -- COLUMNA AGREGADA PARA CORREGIR EL ERROR
+  `Id_Licitacion` INT DEFAULT NULL, 
 
-DROP TABLE IF EXISTS `Orden_Pedido`;
-CREATE TABLE Orden_Pedido (
-    Id INT PRIMARY KEY AUTO_INCREMENT,
-    Solicitante_Id INT, -- Ahora referencia a FUNCIONARIOS_MUNI
-    Nombre_Orden VARCHAR(255),
-    Fecha_Creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
-    Tipo_Compra VARCHAR(100),
-    Presupuesto VARCHAR(100),
-    Subprog VARCHAR(100),
-    Centro_Costos VARCHAR(100),
-    Valor_neto DECIMAL(12, 2),
-    Plazo_maximo VARCHAR(100),
-    Iva DECIMAL(10, 2),
-    Valor_total DECIMAL(12, 2),
-    Estado VARCHAR(50),
-    Motivo_Rechazo TEXT,
-    Motivo_Compra TEXT,
-    Cuenta_Presupuestaria VARCHAR(100),
-    FOREIGN KEY (Solicitante_Id) REFERENCES FUNCIONARIOS_MUNI(ID)
-    ON DELETE SET NULL
-);
+  PRIMARY KEY (`Id`),
+  KEY `idx_solicitante` (`Solicitante_Id`),
+  CONSTRAINT `fk_orden_funcionario`
+    FOREIGN KEY (`Solicitante_Id`) 
+    REFERENCES `FUNCIONARIOS_MUNI` (`ID`) 
+    ON DELETE SET NULL 
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 
 -- ==========================================
 -- 4. TABLA ORDEN_ITEM
 -- ==========================================
+CREATE TABLE `Orden_Item` (
+  `Id` INT PRIMARY KEY AUTO_INCREMENT,
+  `Orden_Id` INT NOT NULL,
+  `Nombre_producto_servicio` VARCHAR(255),
+  `Codigo_Producto` VARCHAR(100),
+  `Cantidad` INT,
+  `Valor_Unitario` DECIMAL(12, 2),
+  `Valor_Total` DECIMAL(12, 2),
+  FOREIGN KEY (`Orden_Id`) REFERENCES `Orden_Pedido`(`Id`)
+  ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-DROP TABLE IF EXISTS `Orden_Item`;
-CREATE TABLE Orden_Item (
-    Id INT PRIMARY KEY AUTO_INCREMENT,
-    Orden_Id INT NOT NULL,
-    Nombre_producto_servicio VARCHAR(255),
-    Codigo_Producto VARCHAR(100),
-    Cantidad INT,
-    Valor_Unitario DECIMAL(12, 2),
-    Valor_Total DECIMAL(12, 2),
-    FOREIGN KEY (Orden_Id) REFERENCES Orden_Pedido(Id)
-    ON DELETE CASCADE
-);
 
 -- ==========================================
 -- 5. TABLA GESTION_COMPRA
 -- ==========================================
+CREATE TABLE `Gestion_Compra` (
+  `Id` INT PRIMARY KEY AUTO_INCREMENT,
+  `Orden_Id` INT NOT NULL,
+  `Fecha_Gestion` DATETIME,
+  `Proveedor_Contactado` VARCHAR(255),
+  `Estado_gestion` VARCHAR(100),
+  FOREIGN KEY (`Orden_Id`) REFERENCES `Orden_Pedido`(`Id`)
+  ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-DROP TABLE IF EXISTS `Gestion_Compra`;
-CREATE TABLE Gestion_Compra (
-    Id INT PRIMARY KEY AUTO_INCREMENT,
-    Orden_Id INT NOT NULL,
-    Fecha_Gestion DATETIME,
-    Proveedor_Contactado VARCHAR(255),
-    Estado_gestion VARCHAR(100),
-    FOREIGN KEY (Orden_Id) REFERENCES Orden_Pedido(Id)
-    ON DELETE CASCADE
-);
 
 -- ==========================================
 -- 6. TABLA FIRMAS_ORDEN
 -- ==========================================
+CREATE TABLE `Firmas_Orden` (
+  `Id` INT PRIMARY KEY AUTO_INCREMENT,
+  `Usuario_Id` INT, 
+  `Orden_Id` INT,
+  `Fecha_Firma` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `Decision` BOOLEAN,
+  FOREIGN KEY (`Usuario_Id`) REFERENCES `FUNCIONARIOS_MUNI`(`ID`) ON DELETE SET NULL,
+  FOREIGN KEY (`Orden_Id`) REFERENCES `Orden_Pedido`(`Id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-DROP TABLE IF EXISTS `Firmas_Orden`;
-CREATE TABLE Firmas_Orden (
-    Id INT PRIMARY KEY AUTO_INCREMENT,
-    Usuario_Id INT, -- Referencia a FUNCIONARIOS_MUNI
-    Orden_Id INT,
-    Fecha_Firma DATETIME DEFAULT CURRENT_TIMESTAMP,
-    Decision BOOLEAN,
-    FOREIGN KEY (Usuario_Id) REFERENCES FUNCIONARIOS_MUNI(ID) ON DELETE SET NULL,
-    FOREIGN KEY (Orden_Id) REFERENCES Orden_Pedido(Id) ON DELETE CASCADE
-);
 
 -- ==========================================
 -- 7. TABLA ORDEN_ARCHIVOS
 -- ==========================================
-
-DROP TABLE IF EXISTS `Orden_Archivos`;
-CREATE TABLE Orden_Archivos (
-    Id INT PRIMARY KEY AUTO_INCREMENT,
-    Orden_Id INT NOT NULL,
-    Nombre_Archivo VARCHAR(255) NOT NULL,
-    Nombre_Original VARCHAR(255) NOT NULL,
-    Tipo_Documento VARCHAR(50),
-    Ruta_Archivo VARCHAR(255),
-    FOREIGN KEY (Orden_Id) REFERENCES Orden_Pedido(Id) ON DELETE CASCADE
-);
+CREATE TABLE `Orden_Archivos` (
+  `Id` INT PRIMARY KEY AUTO_INCREMENT,
+  `Orden_Id` INT NOT NULL,
+  `Nombre_Archivo` VARCHAR(255) NOT NULL,
+  `Nombre_Original` VARCHAR(255) NOT NULL,
+  `Tipo_Documento` VARCHAR(50),
+  `Ruta_Archivo` VARCHAR(255),
+  FOREIGN KEY (`Orden_Id`) REFERENCES `Orden_Pedido`(`Id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 COMMIT;
