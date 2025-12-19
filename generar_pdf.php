@@ -363,7 +363,14 @@ if ($estado == 'Aprobado') {
     $pdf->Ln(5);
     $pdf->SetTextColor(0, 128, 0);
     $pdf->SetFont('Arial', 'I', 10);
-    $pdf->Image('assets/img/check.png', 85, $pdf->GetY(), 5); // Si tienes un icono de check
+    
+    // --- VERIFICACIÓN DE EXISTENCIA ---
+    $ruta_check = 'assets/img/check.png';
+    if (file_exists($ruta_check)) {
+        $pdf->Image($ruta_check, 85, $pdf->GetY(), 5);
+    }
+    // ----------------------------------
+
     $pdf->Cell(0, 6, utf8_decode('Documento Firmado y Aprobado Digitalmente'), 0, 1, 'C');
     
     $pdf->SetFont('Arial', '', 8);

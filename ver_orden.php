@@ -333,7 +333,7 @@ $mostrar_gestion_box = ($user_rol_actual === 'ADQUISICIONES' && $orden['Estado']
                             <input type="text" class="read-only-input" value="<?php echo date("d/m/Y", strtotime($orden['Plazo_maximo'])); ?>" disabled>
                         </div>
                         <div class="form-group">
-                            <label>Modalidad</label>
+                            <label>Tipo De Compra</label>
                             <input type="text" class="read-only-input" value="<?php echo htmlspecialchars($orden['Tipo_Compra']); ?>" disabled>
                         </div>
                         <div class="form-group full-width">
@@ -351,6 +351,10 @@ $mostrar_gestion_box = ($user_rol_actual === 'ADQUISICIONES' && $orden['Estado']
                 </div>
                 <div class="form-body">
                     <div class="form-grid">
+                        <div class="form-group">
+                            <label>Presupuesto</label>
+                            <input type="text" class="read-only-input" value="<?php echo htmlspecialchars($orden['Presupuesto']); ?>" disabled>
+                        </div>
                         <div class="form-group">
                             <label>Cuenta Presupuestaria</label>
                             <input type="text" class="read-only-input" value="<?php echo htmlspecialchars($orden['Cuenta_Presupuestaria']); ?>" disabled>
