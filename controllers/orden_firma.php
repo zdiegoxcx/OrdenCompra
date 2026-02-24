@@ -20,7 +20,7 @@ if (!$data) {
 }
 
 $user_id_actual  = $_SESSION['user_id'];
-// CORRECCIÓN: Convertir a mayúsculas para coincidir con la lógica de ver_orden.php
+// Convertir a mayúsculas para coincidir con la lógica de ver_orden.php
 $user_rol_actual = strtoupper($_SESSION['user_rol']);   
 $user_depto_actual = $_SESSION['user_depto'];
 
@@ -79,9 +79,6 @@ try {
     }
 
     // 3. PROCESAR ACCIÓN
-    $sql_log = "INSERT INTO Firmas_Orden (Usuario_Id, Orden_Id, Fecha_Firma, Decision) VALUES (?, ?, NOW(), ?)";
-    $stmt_log = $conn->prepare($sql_log);
-
     if ($accion === 'firmar') {
         // --- VALIDACIÓN DE TOKEN (Primeros 6 dígitos del RUT) ---
         
@@ -109,26 +106,28 @@ try {
         // --- SI ES CORRECTO, ACTUALIZAR ORDEN ---
         $conn->query("UPDATE Orden_Pedido SET Estado = '$nuevo_estado' WHERE Id = $orden_id");
         
-        // Registrar Log Aprobado (1)
-        $decision = 1;
-        $stmt_log->bind_param("iii", $user_id_actual, $orden_id, $decision);
+        // --- REGISTRAR FIRMA (Solo se inserta si es aprobada) ---
+        $sql_log = "INSERT INTO Firmas_Orden (Usuario_Id, Orden_Id, Fecha_Firma) VALUES (?, ?, NOW())";
+        $stmt_log = $conn->prepare($sql_log);
+        $stmt_log->bind_param("ii", $user_id_actual, $orden_id);
+        $stmt_log->execute();
+        $stmt_log->close();
+
         $msg = "Orden firmada exitosamente.";
 
     } elseif ($accion === 'rechazar') {
         if (empty($motivo)) throw new Exception("Debe indicar un motivo.");
         
+        // Solo actualizamos la orden principal, NO insertamos en Firmas_Orden
         $sql_upd = "UPDATE Orden_Pedido SET Estado = 'Rechazada', Motivo_Rechazo = ? WHERE Id = ?";
         $stmt_upd = $conn->prepare($sql_upd);
         $stmt_upd->bind_param("si", $motivo, $orden_id);
         $stmt_upd->execute();
+        $stmt_upd->close();
 
-        // Registrar Log Rechazado (0)
-        $decision = 0;
-        $stmt_log->bind_param("iii", $user_id_actual, $orden_id, $decision);
         $msg = "Orden rechazada.";
     }
 
-    $stmt_log->execute();
     $conn->commit();
 
     echo json_encode(['success' => true, 'message' => $msg]);
