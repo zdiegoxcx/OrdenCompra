@@ -1,0 +1,262 @@
+/* Estilos Generales */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f7f6;
+    margin: 0;
+}
+
+.app-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* Encabezado */
+.app-header {
+    background-color: #004a99;
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Contenido Principal */
+.app-content {
+    padding: 20px;
+}
+
+/* Panel de Órdenes */
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+}
+
+th {
+    background-color: #f9f9f9;
+}
+
+/* Botones y Enlaces */
+.btn, button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-primary { background-color: #007bff; color: white; }
+.btn-secondary { background-color: #6c757d; color: white; }
+.btn-success { background-color: #28a745; color: white; }
+.btn-danger { background-color: #dc3545; color: white; }
+.btn-add-item { background-color: #e9f5ff; color: #007bff; border: 1px dashed #007bff; }
+.accion-btn { background: none; border: none; color: #dc3545; font-size: 1.2em; cursor: pointer; }
+
+/* Indicadores de Estado */
+.status {
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.status-aprobado { background-color: #e6f7ec; color: #28a745; }
+.status-pendiente { background-color: #fff8e1; color: #f59e0b; }
+.status-borrador { background-color: #f3f4f6; color: #6b7280; }
+
+/* Contenedor del Formulario */
+.form-container {
+    display: none; /* Se controla con JS para mostrar/ocultar */
+}
+
+fieldset {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+legend {
+    font-weight: bold;
+    font-size: 1.2em;
+    padding: 0 10px;
+    color: #004a99;
+}
+
+/* Grid y Grupos de Formulario */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-group input, .form-group select, .form-group textarea {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.form-group input:disabled {
+    background-color: #f4f4f4;
+    cursor: not-allowed;
+}
+
+.form-group textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+/* Tabla de Ítems dentro del Formulario */
+#items-table th, #items-table td {
+    padding: 8px;
+    vertical-align: middle;
+}
+
+#items-table input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#items-table .total-linea {
+    font-weight: bold;
+}
+
+/* Sección de Totales */
+.totals-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px 20px;
+    max-width: 400px;
+    margin-left: auto;
+    align-items: center;
+}
+
+.totals-grid label {
+    font-weight: 600;
+    text-align: right;
+}
+
+/* Botones de Acción del Formulario */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* ... (Todo tu CSS original va aquí) ... */
+
+/* Botones de Acción del Formulario */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* **** NUEVA CLASE AÑADIDA AL FINAL **** */
+.status-pendiente-firma {
+    background-color: #e6f7ff; /* Azul suave */
+    color: #007bff;
+}
+
+/* ... (Todo tu CSS original va aquí) ... */
+
+
+/* =========================================
+ --- ESTILOS DEL MODAL (POP-UP) ---
+=========================================
+*/
+
+/* El fondo oscuro */
+.modal-overlay {
+    display: none; /* Oculto por defecto */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Oscurece el fondo */
+    z-index: 1000;
+}
+
+/* La ventana del modal */
+.modal {
+    display: none; /* Oculto por defecto */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* Centra el modal */
+    background-color: #fff;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    z-index: 1001; /* Encima del fondo */
+    width: 90%;
+    max-width: 500px; /* Ancho máximo */
+}
+
+.modal h3 {
+    margin-top: 0;
+    color: #333;
+}
+
+.modal p {
+    margin-bottom: 15px;
+    color: #555;
+}
+
+.modal textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    resize: vertical;
+    box-sizing: border-box; /* Asegura que el padding no rompa el ancho */
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* Clase que usará JS para mostrar el modal */
+.modal-show {
+    display: block !important;
+}

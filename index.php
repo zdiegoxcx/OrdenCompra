@@ -14,18 +14,6 @@ $registros_por_pagina = 5;
 $pagina_actual = max(1, (int)($_GET['pagina'] ?? 1));
 $offset = ($pagina_actual - 1) * $registros_por_pagina;
 
-// 2. Lógica Automática: Actualizar estados expirados
-$conn->query("
-    UPDATE Orden_Pedido op
-    INNER JOIN (
-        SELECT Orden_Id, MAX(Fecha_Gestion) as Ultima_Gestion 
-        FROM Gestion_Compra 
-        GROUP BY Orden_Id
-    ) gc ON op.Id = gc.Orden_Id
-    SET op.Estado = 'Sin respuesta del vendedor'
-    WHERE op.Estado = 'En Espera'
-    AND gc.Ultima_Gestion < DATE_SUB(NOW(), INTERVAL 10 MINUTE)
-");
 
 $user_id = $_SESSION['user_id'];
 $user_nombre = $_SESSION['user_name'] ?? $_SESSION['user_nombre'] ?? 'Usuario';
@@ -45,16 +33,28 @@ $sql_where = " WHERE 1=1";
 $params = [];
 $types = "";
 
+// Necesitamos unir la tabla funcionarios para saber el departamento de la orden
+$join_funcionarios = " LEFT JOIN FUNCIONARIOS_MUNI f ON op.Solicitante_Id = f.ID ";
+
 if ($rol_limpio === 'DIRECTOR') {
-    $sql_where .= " AND (op.Estado = 'Pend. Firma Director' OR op.Solicitante_Id = ?)";
+    $sql_where .= " AND ((op.Estado = 'Pend. Firma Director' AND f.DEPTO = ?) OR op.Solicitante_Id = ?)";
+    $params[] = $user_depto; $types .= "s";
+    $params[] = $user_id;    $types .= "i";
+} else if ($rol_limpio === 'SUPER_ADQUI') {
+    // Ve lo del Director (de su depto) Y lo de Adquisiciones ('Aprobado' y 'Contactado')
+    $sql_where .= " AND ((op.Estado = 'Pend. Firma Director' AND f.DEPTO = ?) OR op.Estado IN ('Aprobado', 'Contactado') OR op.Solicitante_Id = ?)";
+    $params[] = $user_depto; $types .= "s";
+    $params[] = $user_id;    $types .= "i";
 } else if ($rol_limpio === 'ALCALDE') {
     $sql_where .= " AND (op.Estado = 'Pend. Firma Alcalde' OR op.Solicitante_Id = ?)";
+    $params[] = $user_id;    $types .= "i";
 } else if ($rol_limpio === 'ADQUISICIONES') {
-    $sql_where .= " AND (op.Estado IN ('Aprobado', 'En Espera', 'Sin respuesta del vendedor') OR op.Solicitante_Id = ?)";
+    $sql_where .= " AND (op.Estado IN ('Aprobado', 'Contactado') OR op.Solicitante_Id = ?)";
+    $params[] = $user_id;    $types .= "i";
 } else {
     $sql_where .= " AND op.Solicitante_Id = ?";
+    $params[] = $user_id;    $types .= "i";
 }
-$params[] = $user_id; $types .= "i";
 
 if (!empty($busqueda)) {
     $sql_where .= " AND (op.Id LIKE ? OR op.Nombre_Orden LIKE ?)";
@@ -66,7 +66,7 @@ if (!empty($fecha_inicio)) { $sql_where .= " AND DATE(op.Fecha_Creacion) >= ?"; 
 if (!empty($fecha_fin)) { $sql_where .= " AND DATE(op.Fecha_Creacion) <= ?"; $params[] = $fecha_fin; $types .= "s"; }
 
 // 5. Ejecución de consultas (Conteo Total)
-$stmt_count = $conn->prepare("SELECT COUNT(*) as total FROM Orden_Pedido op $sql_where");
+$stmt_count = $conn->prepare("SELECT COUNT(*) as total FROM Orden_Pedido op $join_funcionarios $sql_where");
 if (!empty($params)) $stmt_count->bind_param($types, ...$params);
 $stmt_count->execute();
 $total_registros = $stmt_count->get_result()->fetch_assoc()['total'];
@@ -74,7 +74,7 @@ $total_paginas = ceil($total_registros / $registros_por_pagina);
 
 // 6. Obtención de datos paginados
 $sql_data = "SELECT op.Id, op.Nombre_Orden, op.Fecha_Creacion, op.Valor_total, op.Estado 
-             FROM Orden_Pedido op $sql_where 
+             FROM Orden_Pedido op $join_funcionarios $sql_where 
              ORDER BY op.Id DESC LIMIT ? OFFSET ?";
 $params_data = array_merge($params, [$registros_por_pagina, $offset]);
 $stmt = $conn->prepare($sql_data);
@@ -85,11 +85,10 @@ $resultado = $stmt->get_result();
 function getStatusClass($estado) {
     switch (strtolower($estado)) {
         case 'aprobado': return 'status-aprobado';
+        case 'contactado': return 'status-aprobado'; // Usa el color que prefieras, por ejemplo verde (aprobado) o azul
         case 'pend. firma director': return 'status-pendiente-firma';
         case 'pend. firma alcalde': return 'status-pendiente';
         case 'rechazada': return 'status-rechazado';
-        case 'sin respuesta del vendedor': return 'status-vencido';
-        case 'en espera': return 'status-espera';
         default: return 'status-borrador';
     }
 }

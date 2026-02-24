@@ -59,9 +59,14 @@ try {
         $nuevo_estado = 'Pend. Firma Director';
     }
     // B: Director firma CUALQUIER orden pendiente de firma de director (Global)
-    elseif ($estado_actual === 'Pend. Firma Director' && $user_rol_actual === 'DIRECTOR') {
-        $puede_actuar = true;
-        $nuevo_estado = 'Pend. Firma Alcalde';
+    elseif ($estado_actual === 'Pend. Firma Director' && ($user_rol_actual === 'DIRECTOR' || $user_rol_actual === 'SUPER_ADQUI')) {
+        // Validar que el departamento del usuario que firma coincida con el de la orden
+        if ($user_depto_actual === $orden['DEPTO']) {
+            $puede_actuar = true;
+            $nuevo_estado = 'Pend. Firma Alcalde';
+        } else {
+            throw new Exception("Acceso denegado: Solo puede firmar órdenes creadas por funcionarios de su propio departamento (" . $user_depto_actual . ").");
+        }
     }
     // C: Alcalde aprueba todo
     elseif ($estado_actual === 'Pend. Firma Alcalde' && $user_rol_actual === 'ALCALDE') {

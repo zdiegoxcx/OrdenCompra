@@ -10,7 +10,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // Preparamos la consulta para buscar solo por RUT
     // Si cambiaste el nombre de la columna ADQUISICIONES a FUNCIONARIO en la BD, cámbialo aquí también.
-    $sql = "SELECT ID, NOMBRE, APELLIDO, DEPTO, ADQUISICIONES 
+    // Preparamos la consulta para buscar solo por RUT (Agregamos TIPO_CONTRATO)
+    $sql = "SELECT ID, NOMBRE, APELLIDO, DEPTO, ADQUISICIONES, TIPO_CONTRATO 
             FROM FUNCIONARIOS_MUNI 
             WHERE RUT = ?";
             
@@ -20,8 +21,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $result = $stmt->get_result();
 
     if ($result->num_rows === 1) {
-        // --- USUARIO ENCONTRADO ---
         $user = $result->fetch_assoc();
+
+        // NUEVO: Validar que no sea un trabajador a Honorarios
+        $tipo_contrato = strtoupper(trim($user['TIPO_CONTRATO']));
+        if ($tipo_contrato === 'HONORARIO' || $tipo_contrato === 'HONORARIOS') {
+            // Redirigir de vuelta al login con un código de error específico
+            header("Location: ../login.php?error=3");
+            exit;
+        }
 
         // Guardamos variables de sesión
         $_SESSION['user_id'] = $user['ID'];
@@ -30,7 +38,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $_SESSION['user_depto'] = $user['DEPTO'];
         
         // Rol del usuario (Jefe, Administrativo, etc.)
-        // Si el campo es nulo, asignamos 'FUNCIONARIO' por defecto
         $_SESSION['user_rol'] = !empty($user['ADQUISICIONES']) ? $user['ADQUISICIONES'] : 'FUNCIONARIO';
 
         // Redirigir al panel principal

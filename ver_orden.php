@@ -74,9 +74,11 @@ $mostrar_firma_box = false;
 if ($orden_estado === 'Pend. Mi Firma' && $user_id_actual == $orden_solicitante_id) {
     $mostrar_firma_box = true;
 }
-// Caso B: Director firma (GLOBAL)
-elseif ($orden_estado === 'Pend. Firma Director' && $user_rol_actual === 'DIRECTOR') {
-    $mostrar_firma_box = true;
+// Caso B: Director o SUPER_ADQUI firman solo órdenes de su propio departamento
+elseif ($orden_estado === 'Pend. Firma Director' && ($user_rol_actual === 'DIRECTOR' || $user_rol_actual === 'SUPER_ADQUI')) {
+    if ($user_depto_actual === $orden['Nombre_Departamento']) {
+        $mostrar_firma_box = true;
+    }
 }
 // Caso C: Alcalde firma final
 elseif ($orden_estado === 'Pend. Firma Alcalde' && $user_rol_actual === 'ALCALDE') {
@@ -94,8 +96,8 @@ if (in_array($tipo_compra, ['Compra Ágil', 'Licitación Pública', 'Licitación
     $isConvenioMarco = true;
 }
 
-// Lógica de gestión
-$mostrar_gestion_box = ($user_rol_actual === 'ADQUISICIONES' && $orden['Estado'] === 'Aprobado');
+// Lógica de gestión (Adquisiciones o Super Adquisiciones)
+$mostrar_gestion_box = (($user_rol_actual === 'ADQUISICIONES' || $user_rol_actual === 'SUPER_ADQUI') && $orden['Estado'] === 'Aprobado');
 ?>
 <!DOCTYPE html>
 <html lang="es">

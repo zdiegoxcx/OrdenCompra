@@ -77,6 +77,7 @@ if (isset($_SESSION['user_id'])) {
             <?php 
                 if($_GET['error'] == '1') echo "El RUT ingresado no se encuentra en el sistema.";
                 if($_GET['error'] == '2') echo "Debe iniciar sesión para continuar.";
+                if($_GET['error'] == '3') echo "Acceso denegado: Los funcionarios a honorarios no tienen permisos para utilizar el sistema.";
             ?>
         </div>
     <?php endif; ?>

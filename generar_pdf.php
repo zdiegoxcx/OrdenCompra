@@ -75,7 +75,7 @@ class PDF extends FPDF {
         $this->SetFont('Arial', '', 9);
         $this->SetTextColor(100, 100, 100); // Gris
         $this->Cell(0, 5, utf8_decode('Departamento de Adquisiciones'), 0, 1, 'C');
-        $this->Cell(0, 5, utf8_decode('RUT: 69.170.600-4 | Calle Principal #123'), 0, 1, 'C');
+        $this->Cell(0, 5, utf8_decode('RUT: 69.170.400-9 | José Miguel Carrera 460'), 0, 1, 'C');
         
         // --- TÍTULO DOCUMENTO ---
         $this->Ln(10);
